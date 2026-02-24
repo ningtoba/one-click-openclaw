@@ -69,7 +69,7 @@ Write-Host ""
 # Defaults
 $port = 18789
 $llmBaseUrl = "http://localhost:11434/v1"
-$llmModel = "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M"
+$llmModel = "glm-4.7-flash"
 $dataDir = "$env:USERPROFILE\.openclaw"
 $workspace = "$dataDir\workspace"
 
@@ -122,12 +122,69 @@ $modelList = ollama list 2>&1
 if ($modelList -match $llmModel) {
     Write-Host "[OK] Model '$llmModel' already installed" -ForegroundColor Green
 } else {
-    Write-Host "Model not found. Pulling '$llmModel'..." -ForegroundColor Yellow
-    ollama pull $llmModel
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "[OK] Model installed" -ForegroundColor Green
+    Write-Host "Model not found. Installing from HuggingFace..." -ForegroundColor Yellow
+    
+    # Model info
+    $hfModel = "unsloth/GLM-4.7-Flash-GGUF"
+    $hfFile = "GLM-4.7-Flash-Q2_K_L.gguf"
+    $modelDir = "$env:USERPROFILE\.ollama\models"
+    $modelPath = "$modelDir\$hfFile"
+    $modelfilePath = "$modelDir\Modelfile"
+    
+    # Download from HuggingFace using hf-cli or direct download
+    Write-Host "Downloading $hfFile from HuggingFace..." -ForegroundColor Cyan
+    
+    # Try using huggingface-cli first, fallback to direct download
+    $downloadSuccess = $false
+    
+    # Method 1: Try huggingface-cli
+    try {
+        Write-Host "Trying huggingface-cli..." -ForegroundColor Gray
+        hf download --repo-type model --filename $hfFile $hfModel --local-dir $modelDir 2>&1 | Out-Null
+        if (Test-Path $modelPath) {
+            $downloadSuccess = $true
+        }
+    } catch {}
+    
+    # Method 2: Direct download via raw URL
+    if (-not $downloadSuccess) {
+        Write-Host "Trying direct download..." -ForegroundColor Gray
+        $downloadUrl = "https://huggingface.co/$hfModel/resolve/main/$hfFile"
+        try {
+            New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $modelPath -UseBasicParsing
+            if (Test-Path $modelPath) {
+                $downloadSuccess = $true
+            }
+        } catch {
+            Write-Host "[WARNING] Could not download automatically" -ForegroundColor Yellow
+        }
+    }
+    
+    if ($downloadSuccess -and (Test-Path $modelPath)) {
+        Write-Host "Creating Ollama Modelfile..." -ForegroundColor Cyan
+        
+        # Create Modelfile
+        @"
+FROM ./$hfFile
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+"@ | OutFile -FilePath $modelfilePath -Encoding UTF8
+        
+        # Create the model in Ollama
+        Set-Location $modelDir
+        ollama create $llmModel -f $modelfilePath
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] Model '$llmModel' installed from HuggingFace" -ForegroundColor Green
+        } else {
+            Write-Host "[WARNING] Could not create Ollama model. Trying direct..." -ForegroundColor Yellow
+            ollama create $llmModel --from $modelPath
+        }
     } else {
-        Write-Host "[WARNING] Could not pull model. Will use default." -ForegroundColor Yellow
+        Write-Host "[WARNING] Could not download model. Trying ollama pull..." -ForegroundColor Yellow
+        ollama pull $llmModel
     }
 }
 

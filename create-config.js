@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const port = process.env.PORT || '18789';
 const llmUrl = process.env.LLM || 'http://localhost:11434/v1';
-const model = process.env.MODEL || 'ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M';
+const model = process.env.MODEL || 'glm-4.7-flash';
 const token = process.env.TOKEN || Math.random().toString(36).substring(2);
 const dataDir = process.env.DATA || (process.env.USERPROFILE || process.env.HOME) + '/.openclaw';
 

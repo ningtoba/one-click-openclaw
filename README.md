@@ -34,7 +34,7 @@ During setup, you'll be asked for:
 |--------|---------|-------------|
 | Port | 18789 | Gateway port |
 | LLM Base URL | http://localhost:8000/v1 | Your LLM API endpoint |
-| LLM Model | ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M | Model ID |
+| LLM Model | glm-4.7-flash | Model ID |
 
 ## Common LLM Setups
 
