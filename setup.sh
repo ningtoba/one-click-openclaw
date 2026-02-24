@@ -107,7 +107,7 @@ echo "OK"
 echo ""
 echo "[7/7] Installing ClawHub and skills..."
 npm install -g clawhub
-clawhub install pc-assistant
+clawhub install ningtoba/pc-assistant
 echo "OK"
 
 # Create config

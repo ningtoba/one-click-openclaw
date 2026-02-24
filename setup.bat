@@ -96,7 +96,7 @@ echo OK
 echo.
 echo [7/7] Installing ClawHub and skills...
 cmd /c "npm install -g clawhub"
-cmd /c "clawhub install pc-assistant"
+cmd /c "clawhub install ningtoba/pc-assistant"
 if %ERRORLEVEL% neq 0 (
     echo WARNING: Could not install skills. Continuing anyway.
 )

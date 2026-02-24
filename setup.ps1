@@ -108,7 +108,7 @@ Write-Host "  Installing ClawHub and skills..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 npm install -g clawhub
-clawhub install pc-assistant
+clawhub install ningtoba/pc-assistant
 
 Write-Host "[OK] Skills installed" -ForegroundColor Green
 Write-Host ""
