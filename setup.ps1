@@ -185,7 +185,12 @@ const c = {
         tailscale: { mode: 'off' },
         nodes: { denyCommands: ['camera.snap', 'camera.clip', 'screen.record', 'exec'] }
     },
-    channels: {},
+    channels: {
+        "webchat": {
+            "account": "default",
+            "config": {}
+        }
+    },
     hooks: { internal: { enabled: true, entries: {} } },
     commands: { native: 'auto', nativeSkills: 'auto' },
     messages: { ackReactionScope: 'group-mentions' }
