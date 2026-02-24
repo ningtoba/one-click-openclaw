@@ -134,4 +134,16 @@ openclaw gateway &
 
 echo ""
 echo "All set! OpenClaw is running"
+
+# Open dashboard in browser
+if command -v xdg-open &> /dev/null; then
+    xdg-open "http://localhost:$PORT"
+elif command -v open &> /dev/null; then
+    open "http://localhost:$PORT"
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    start "http://localhost:$PORT"
+fi
+
+echo "Opening OpenClaw dashboard..."
+
 read -p "Press Enter to exit..."

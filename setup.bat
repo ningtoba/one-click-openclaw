@@ -126,4 +126,8 @@ echo ========================================
 echo   All set! OpenClaw is running
 echo ========================================
 echo.
+
+echo Opening OpenClaw dashboard...
+start http://localhost:%PORT%
+
 pause

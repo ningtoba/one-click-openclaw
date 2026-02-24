@@ -226,4 +226,10 @@ Write-Host ""
 Write-Host "To stop: Close the OpenClaw window or run 'openclaw gateway stop'" -ForegroundColor White
 Write-Host ""
 
+# Open dashboard in browser
+Start-Process "http://localhost:$port"
+Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan
+
+Start-Sleep -Seconds 2
+
 Read-Host "Press Enter to exit..."
