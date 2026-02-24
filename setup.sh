@@ -75,7 +75,7 @@ echo "[5/6] Configuration"
 echo "-------------------------"
 PORT="${PORT:-18789}"
 LLM_URL="${LLM_URL:-http://localhost:11434/v1}"
-MODEL="${MODEL:-glm-4.7-flash}"
+MODEL="${MODEL:-ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M}"
 
 read -p "Port [$PORT]: " CUSTOM_PORT
 [ -n "$CUSTOM_PORT" ] && PORT="$CUSTOM_PORT"
