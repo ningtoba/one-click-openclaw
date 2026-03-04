@@ -123,6 +123,30 @@ echo OK
 
 echo.
 echo ========================================
+echo   Security Hardening (Optional)
+echo ========================================
+echo.
+echo Gateway is configured for localhost-only binding (127.0.0.1)
+echo This means only your browser on this machine can access OpenClaw
+echo.
+set /p FIREWALL="Add Windows Firewall rule to block external access? (y/n, default: y): "
+if "%FIREWALL%"=="" set FIREWALL=y
+if /i "%FIREWALL%"=="y" (
+    echo Adding firewall rule...
+    netsh advfirewall firewall add rule name="OpenClaw Gateway Block" dir=in action=block protocol=TCP localport=%PORT% enable=yes profile=any >nul 2>&1
+    if %ERRORLEVEL% equ 0 (
+        echo [OK] Firewall rule added - external access blocked
+    ) else (
+        echo [WARNING] Could not create firewall rule (may require admin)
+        echo Localhost binding still provides protection
+    )
+) else (
+    echo [INFO] Skipping firewall configuration
+    echo Localhost binding still protects from external access
+)
+
+echo.
+echo ========================================
 echo   DONE!
 echo ========================================
 echo URL: http://localhost:%PORT%

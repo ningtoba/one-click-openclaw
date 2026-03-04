@@ -11,6 +11,19 @@ echo "  OpenClaw Direct Setup"
 echo "========================================"
 echo ""
 
+# Check if running as root
+if [ "$EUID" -eq 0 ]; then
+    echo "[ERROR] Running as root detected!"
+    echo ""
+    echo "DO NOT run this script as root/sudo."
+    echo "OpenClaw should run under your standard user account for security."
+    echo ""
+    echo "Please close this window and run normally."
+    echo ""
+    read -p "Press Enter to exit..."
+    exit 1
+fi
+
 # Check Node.js
 echo "[1/6] Checking Node.js..."
 if ! command -v node &> /dev/null; then
@@ -117,6 +130,50 @@ export PORT LLM MODEL
 node "$(dirname "$0")/create-config.js"
 echo "OK"
 
+# Optional: Configure firewall for additional security
+echo ""
+echo "========================================"
+echo "  Security Hardening (Optional)"
+echo "========================================"
+echo ""
+echo "Gateway is configured for localhost-only binding (127.0.0.1)"
+echo "This means only your browser on this machine can access OpenClaw"
+echo ""
+
+read -p "Add firewall rule to block external access? (y/n, default: y): " -n 1 -r FIREWALL
+echo ""
+if [ -z "$FIREWALL" ] || [ "$FIREWALL" = "y" ] || [ "$FIREWALL" = "Y" ]; then
+    # Detect OS and apply appropriate firewall rule
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux - try ufw first, then firewall-cmd
+        if command -v ufw &> /dev/null; then
+            sudo ufw deny from any to any port $PORT proto tcp 2>/dev/null && \
+                echo "[OK] UFW rule added - external access blocked" || \
+                echo "[WARNING] Could not create UFW rule (localhost binding still protects)"
+        elif command -v firewall-cmd &> /dev/null; then
+            sudo firewall-cmd --permanent --add-port=$PORT/tcp 2>/dev/null && \
+                sudo firewall-cmd --reload && \
+                echo "[OK] firewalld rule added" || \
+                echo "[WARNING] Could not create firewalld rule"
+        else
+            echo "[INFO] No firewall tool detected (ufw/firewalld)"
+            echo "Localhost binding still provides protection"
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS - use pf or socketfilterfw
+        if [ -f /usr/libexec/ApplicationFirewall/socketfilterfw ]; then
+            echo "[INFO] macOS Application Firewall detected"
+            echo "Manual configuration may be needed in System Preferences > Security > Firewall"
+            echo "Localhost binding still provides protection"
+        else
+            echo "[INFO] Localhost binding provides protection"
+        fi
+    fi
+else
+    echo "[INFO] Skipping firewall configuration"
+    echo "Localhost binding still protects from external access"
+fi
+
 # Start Ollama and OpenClaw
 echo ""
 echo "========================================"
@@ -125,9 +182,39 @@ echo "========================================"
 echo "URL: http://localhost:$PORT"
 echo ""
 
-echo "Starting Ollama..."
-ollama serve &
-sleep 2
+# Check if Ollama is already running
+echo "Checking Ollama status..."
+if curl -s --connect-timeout 2 http://localhost:11434/api/version > /dev/null 2>&1; then
+    echo "[OK] Ollama is already running"
+else
+    # Check if port 11434 is in use
+    if command -v lsof &> /dev/null; then
+        if lsof -i :11434 > /dev/null 2>&1; then
+            echo "[ERROR] Port 11434 is already in use by another process"
+            echo "Please stop the process using port 11434"
+            read -p "Press Enter to exit..."
+            exit 1
+        fi
+    elif command -v netstat &> /dev/null; then
+        if netstat -tuln | grep -q ":11434"; then
+            echo "[ERROR] Port 11434 is already in use by another process"
+            echo "Please stop the process using port 11434"
+            read -p "Press Enter to exit..."
+            exit 1
+        fi
+    fi
+    
+    echo "Starting Ollama..."
+    ollama serve &
+    sleep 5
+fi
+
+# Verify Ollama is responding
+if curl -s --connect-timeout 5 http://localhost:11434/api/version > /dev/null 2>&1; then
+    echo "[OK] Ollama is responding"
+else
+    echo "[WARNING] Ollama may not be fully ready yet"
+fi
 
 echo "Starting OpenClaw Gateway..."
 openclaw gateway &

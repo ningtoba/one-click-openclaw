@@ -195,9 +195,9 @@ const c = {
     gateway: {
         port: $port,
         mode: 'local',
-        bind: 'lan',
+        bind: '127.0.0.1',  // Localhost-only for security (no external access)
         auth: { mode: 'token', token: '$authToken' },
-        tailscale: { mode: 'off' },
+        tailscale: { mode: 'off' },  // Disabled by default (no account required)
         nodes: { denyCommands: ['camera.snap', 'camera.clip', 'screen.record', 'exec'] }
     },
     channels: {
@@ -219,6 +219,45 @@ node -e $nodeScript
 Write-Host "[OK] Config created at $dataDir\openclaw.json" -ForegroundColor Green
 Write-Host ""
 
+# Optional: Configure Windows Firewall for additional security
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Security Hardening (Optional)" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Gateway is configured for localhost-only binding (127.0.0.1)" -ForegroundColor Green
+Write-Host "This means only your browser on this machine can access OpenClaw" -ForegroundColor Green
+Write-Host ""
+
+$firewallChoice = Read-Host "Add Windows Firewall rule to block external access? (y/n, default: y)"
+if ($firewallChoice -eq "" -or $firewallChoice -eq "y" -or $firewallChoice -eq "Y") {
+    try {
+        # Check if rule already exists
+        $existingRule = Get-NetFirewallRule -DisplayName "OpenClaw Gateway Block" -ErrorAction SilentlyContinue
+        if ($existingRule) {
+            Write-Host "[INFO] Firewall rule already exists" -ForegroundColor Gray
+        } else {
+            # Create firewall rule to block inbound connections to the gateway port
+            New-NetFirewallRule -DisplayName "OpenClaw Gateway Block" `
+                -Direction Inbound `
+                -LocalPort $port `
+                -Protocol TCP `
+                -Action Block `
+                -Enabled True `
+                -Profile Any `
+                -ErrorAction SilentlyContinue
+            
+            Write-Host "[OK] Firewall rule added - external access blocked" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "[WARNING] Could not create firewall rule (may require admin)" -ForegroundColor Yellow
+        Write-Host "Localhost binding still provides protection" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "[INFO] Skipping firewall configuration" -ForegroundColor Gray
+    Write-Host "Localhost binding still protects from external access" -ForegroundColor Gray
+}
+
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Starting Ollama..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
