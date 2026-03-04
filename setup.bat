@@ -8,6 +8,20 @@ echo   OpenClaw Direct Setup
 echo ========================================
 echo.
 
+REM Check if running as Administrator
+net session >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo [ERROR] Running as Administrator detected!
+    echo.
+    echo DO NOT run this script as Administrator.
+    echo OpenClaw should run under your standard user account for security.
+    echo.
+    echo Please close this window and run normally (double-click)
+    echo.
+    pause
+    exit /b 1
+)
+
 echo [1/6] Checking Node.js...
 cmd /c node --version
 if %ERRORLEVEL% neq 0 (
@@ -113,10 +127,31 @@ echo   DONE!
 echo ========================================
 echo URL: http://localhost:%PORT%
 echo.
-echo Starting Ollama in background...
-start /b cmd /c "ollama serve"
 
-timeout /t 3 /nobreak >nul
+REM Check if Ollama is already running
+echo Checking Ollama status...
+powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 2 -UseBasicParsing; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
+if %ERRORLEVEL% equ 0 (
+    echo [OK] Ollama is already running
+) else (
+    REM Check if port 11434 is in use
+    netstat -ano | findstr ":11434" | findstr "LISTENING" >nul
+    if %ERRORLEVEL% equ 0 (
+        echo [ERROR] Port 11434 is already in use by another process
+        echo Please stop the process using port 11434
+        pause
+        exit /b 1
+    )
+    echo Starting Ollama in background...
+    start /b cmd /c "ollama serve"
+    timeout /t 5 /nobreak >nul
+)
+
+REM Verify Ollama is responding
+powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 5 -UseBasicParsing; exit 0 } catch { exit 1 }"
+if %ERRORLEVEL% neq 0 (
+    echo [WARNING] Ollama may not be fully ready yet
+)
 
 echo Starting OpenClaw Gateway...
 start cmd /k "openclaw gateway"

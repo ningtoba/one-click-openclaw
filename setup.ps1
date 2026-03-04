@@ -1,12 +1,27 @@
 ﻿# ========================================
 #   OpenClaw Direct Setup (PowerShell)
 #   Right-click -> Run with PowerShell
+#   DO NOT run as Administrator!
 # ========================================
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  OpenClaw Direct Setup" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Check if running as Administrator
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if ($isAdmin) {
+    Write-Host "[ERROR] Running as Administrator detected!" -ForegroundColor Red
+    Write-Host "" -ForegroundColor Red
+    Write-Host "DO NOT run this script as Administrator." -ForegroundColor Red
+    Write-Host "OpenClaw should run under your standard user account for security." -ForegroundColor Red
+    Write-Host "" -ForegroundColor Red
+    Write-Host "Please close this window and run normally (double-click or right-click -> Run with PowerShell)" -ForegroundColor Red
+    Write-Host "" -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
+}
 
 # Check if Node.js is installed
 try {
@@ -208,16 +223,70 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Starting Ollama..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Start Ollama in background
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "ollama serve"
-Start-Sleep -Seconds 3
+# Check if Ollama is already running on port 11434
+$ollamaRunning = $false
+try {
+    $testConnection = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+    if ($testConnection.StatusCode -eq 200) {
+        $ollamaRunning = $true
+        Write-Host "[OK] Ollama is already running" -ForegroundColor Green
+    }
+} catch {
+    # Ollama not running, will start it
+}
+
+if (-not $ollamaRunning) {
+    # Check if port 11434 is in use by another process
+    $portInUse = Get-NetTCPConnection -LocalPort 11434 -ErrorAction SilentlyContinue
+    if ($portInUse) {
+        Write-Host "[ERROR] Port 11434 is already in use by another process" -ForegroundColor Red
+        Write-Host "Please stop the process using port 11434 or configure a different Ollama port" -ForegroundColor Yellow
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+    
+    # Start Ollama in background
+    Write-Host "Starting Ollama service..." -ForegroundColor Cyan
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "ollama serve"
+    Start-Sleep -Seconds 5
+} else {
+    Write-Host "[INFO] Skipping Ollama start (already running)" -ForegroundColor Gray
+}
+
+# Verify Ollama is responding
+try {
+    $verifyOllama = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 5 -UseBasicParsing
+    Write-Host "[OK] Ollama is responding" -ForegroundColor Green
+} catch {
+    Write-Host "[WARNING] Ollama may not be fully ready yet" -ForegroundColor Yellow
+}
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Starting OpenClaw Gateway..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
+# Verify config exists before starting gateway
+$configPath = "$dataDir\openclaw.json"
+if (-not (Test-Path $configPath)) {
+    Write-Host "[ERROR] Config file not found at $configPath" -ForegroundColor Red
+    Write-Host "Please run 'openclaw setup' first" -ForegroundColor Yellow
+    Read-Host "Press Enter to exit..."
+    exit 1
+}
+
+# Verify gateway mode is set to local
+$configContent = Get-Content $configPath -Raw | ConvertFrom-Json
+if (-not $configContent.gateway.mode -or $configContent.gateway.mode -ne "local") {
+    Write-Host "[WARNING] Gateway mode is not set to 'local'. Fixing..." -ForegroundColor Yellow
+    $configContent.gateway.mode = "local"
+    $configContent | ConvertTo-Json -Depth 10 | Set-Content $configPath
+    Write-Host "[OK] Gateway mode set to 'local'" -ForegroundColor Green
+}
+
 # Start in new window
+Write-Host "Starting gateway..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "openclaw gateway"
+Start-Sleep -Seconds 3
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
