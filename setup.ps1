@@ -1,4 +1,4 @@
-# ========================================
+﻿# ========================================
 #   OpenClaw Direct Setup (PowerShell)
 #   Right-click -> Run with PowerShell
 # ========================================
@@ -145,12 +145,12 @@ Write-Host "========================================" -ForegroundColor Cyan
 # Create config using Node.js via PowerShell
 $nodeScript = @"
 const fs = require('fs');
-const modelKey = 'locallm/' + '$llmModel';
+const modelKey = 'localllm/' + '$llmModel';
 const c = {
     meta: { lastTouchedVersion: '2026.2.17' },
     models: {
         providers: {
-            locallm: {
+            localllm: {
                 baseUrl: '$llmBaseUrl',
                 apiKey: '',
                 api: 'openai-completions',
@@ -220,6 +220,38 @@ Write-Host "========================================" -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "openclaw gateway"
 
 Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Waiting for gateway to be ready..." -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+
+# Health check loop - wait for gateway to respond
+$maxRetries = 30
+$retryCount = 0
+$gatewayReady = $false
+
+while ($retryCount -lt $maxRetries) {
+    Start-Sleep -Seconds 2
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:$port" -TimeoutSec 2 -UseBasicParsing
+        if ($response.StatusCode -eq 200) {
+            $gatewayReady = $true
+            Write-Host "[OK] Gateway is ready!" -ForegroundColor Green
+            break
+        }
+    } catch {
+        $retryCount++
+        Write-Host "Still waiting... ($retryCount/$maxRetries)" -ForegroundColor Yellow
+    }
+}
+
+if (-not $gatewayReady) {
+    Write-Host ""
+    Write-Host "[WARNING] Gateway took longer than expected to start." -ForegroundColor Yellow
+    Write-Host "Opening browser anyway - you may need to refresh." -ForegroundColor Yellow
+    Write-Host ""
+}
+
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  OpenClaw is running!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
@@ -230,9 +262,6 @@ Write-Host "Workspace: $workspace" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "To stop: Close the OpenClaw window or run 'openclaw gateway stop'" -ForegroundColor White
 Write-Host ""
-
-# Wait for gateway to start
-Start-Sleep -Seconds 5
 
 # Open dashboard in browser
 Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan

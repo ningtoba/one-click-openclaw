@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 setlocal enabledelayedexpansion
 
 set SCRIPT_DIR=%~dp0
@@ -121,6 +121,32 @@ timeout /t 3 /nobreak >nul
 echo Starting OpenClaw Gateway...
 start cmd /k "openclaw gateway"
 
+echo.
+echo Waiting for gateway to be ready...
+echo.
+
+REM Health check loop - wait for gateway to respond
+set /a MAX_RETRIES=30
+set /a RETRY_COUNT=0
+:HEALTH_CHECK
+timeout /t 2 /nobreak >nul
+powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:%PORT%' -TimeoutSec 2 -UseBasicParsing; exit $r.StatusCode } catch { exit 1 }"
+if %ERRORLEVEL% equ 0 (
+    echo [OK] Gateway is ready!
+    goto OPEN_BROWSER
+)
+set /a RETRY_COUNT+=1
+echo Still waiting... (%RETRY_COUNT%/%MAX_RETRIES%)
+if %RETRY_COUNT% LSS %MAX_RETRIES% (
+    goto HEALTH_CHECK
+)
+
+echo.
+echo [WARNING] Gateway took longer than expected to start.
+echo Opening browser anyway - you may need to refresh.
+echo.
+
+:OPEN_BROWSER
 echo.
 echo ========================================
 echo   All set! OpenClaw is running
