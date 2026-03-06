@@ -121,6 +121,7 @@ echo ""
 echo "[7/7] Installing ClawHub and skills..."
 npm install -g clawhub
 clawhub install ningtoba/pc-assistant
+clawhub install event-monitor
 echo "OK"
 
 # Create config

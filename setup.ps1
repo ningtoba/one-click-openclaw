@@ -124,6 +124,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 
 npm install -g clawhub
 clawhub install ningtoba/pc-assistant
+clawhub install event-monitor
 
 Write-Host "[OK] Skills installed" -ForegroundColor Green
 Write-Host ""
