@@ -84,7 +84,7 @@ Write-Host ""
 # Defaults
 $port = 18789
 $llmBaseUrl = "http://localhost:11434/v1"
-$llmModel = "ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M"
+$llmModel = "qwen3.5:9b"
 $dataDir = "$env:USERPROFILE\.openclaw"
 $workspace = "$dataDir\workspace"
 

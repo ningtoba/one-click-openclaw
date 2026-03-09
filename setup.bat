@@ -72,7 +72,7 @@ echo [5/6] Configuration
 echo -------------------------
 set PORT=18789
 set LLM_URL=http://localhost:11434/v1
-set MODEL=ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M
+set MODEL=qwen3.5:9b
 
 set /p PORT=Port [%PORT%]: 
 set /p LLM_URL=Ollama URL [%LLM_URL%]: 
@@ -80,7 +80,7 @@ set /p MODEL=Model name [%MODEL%]:
 
 if "%PORT%"=="" set PORT=18789
 if "%LLM_URL%"=="" set LLM_URL=http://localhost:11434/v1
-if "%MODEL%"=="" set MODEL=ServiceNow-AI/Apriel-1.6-15b-Thinker:Q4_K_M
+if "%MODEL%"=="" set MODEL=qwen3.5:9b
 
 echo.
 echo Checking Ollama model: %MODEL%
