@@ -22,6 +22,11 @@ if %ERRORLEVEL% equ 0 (
     exit /b 1
 )
 
+set PORT=18789
+set ENGINE=ollama
+set LLM_URL=http://localhost:11434/v1
+set MODEL=qwen3.5:9b
+
 echo [1/6] Checking Node.js...
 cmd /c node --version
 if %ERRORLEVEL% neq 0 (
@@ -42,17 +47,35 @@ if %ERRORLEVEL% neq 0 (
 echo OK
 
 echo.
-echo [3/6] Checking Ollama...
-where ollama >nul 2>&1
-if %ERRORLEVEL% neq 0 (
-    echo Ollama not found. Installing Ollama...
-    echo Please download from https://ollama.com and run the installer
-    echo Or run this command in PowerShell as Admin:
-    powershell -Command "irm https://ollama.com/install.ps1 | iex"
-    pause
-    exit /b 1
+echo Select Inference Engine:
+echo 1) Ollama (Local, default)
+echo 2) LM Studio (OpenAI Compatible)
+set /p ENGINE_CHOICE="Choice [1]: "
+
+if "%ENGINE_CHOICE%"=="2" (
+    set ENGINE=lmstudio
+    set LLM_URL=http://localhost:1234/v1
+    set MODEL=model-identifier
+    echo Using LM Studio (OpenAI Compatible API)
+) else (
+    set ENGINE=ollama
+    echo Using Ollama
 )
-echo OK: Ollama found
+
+if "%ENGINE%"=="ollama" (
+    echo.
+    echo [3/6] Checking Ollama...
+    where ollama >nul 2>&1
+    if %ERRORLEVEL% neq 0 (
+        echo Ollama not found. Installing Ollama...
+        echo Please download from https://ollama.com and run the installer
+        echo Or run this command in PowerShell as Admin:
+        powershell -Command "irm https://ollama.com/install.ps1 | iex"
+        pause
+        exit /b 1
+    )
+    echo OK: Ollama found
+)
 
 echo.
 echo [4/6] Checking VRAM (GPU memory)...
@@ -68,14 +91,11 @@ if %VRAM_GB% LSS 12 (
 echo OK
 
 echo.
+echo.
 echo [5/6] Configuration
 echo -------------------------
-set PORT=18789
-set LLM_URL=http://localhost:11434/v1
-set MODEL=qwen3.5:9b
-
 set /p PORT=Port [%PORT%]: 
-set /p LLM_URL=Ollama URL [%LLM_URL%]: 
+set /p LLM_URL=LLM URL [%LLM_URL%]: 
 set /p MODEL=Model name [%MODEL%]: 
 
 if "%PORT%"=="" set PORT=18789
@@ -83,18 +103,20 @@ if "%LLM_URL%"=="" set LLM_URL=http://localhost:11434/v1
 if "%MODEL%"=="" set MODEL=qwen3.5:9b
 
 echo.
-echo Checking Ollama model: %MODEL%
-cmd /c "ollama list" | findstr /C:"%MODEL%" >nul
-if %ERRORLEVEL% neq 0 (
-    echo Model not found. Pulling from Ollama library...
-    cmd /c "ollama pull %MODEL%"
+if "%ENGINE%"=="ollama" (
+    echo Checking Ollama model: %MODEL%
+    cmd /c "ollama list" | findstr /C:"%MODEL%" >nul
     if %ERRORLEVEL% neq 0 (
-        echo WARNING: Could not pull model. Will use default.
+        echo Model not found. Pulling from Ollama library...
+        cmd /c "ollama pull %MODEL%"
+        if %ERRORLEVEL% neq 0 (
+            echo WARNING: Could not pull model. Will use default.
+        ) else (
+            echo OK: Model installed
+        )
     ) else (
-        echo OK: Model installed
+        echo OK: Model already installed
     )
-) else (
-    echo OK: Model already installed
 )
 
 echo.
@@ -153,29 +175,31 @@ echo ========================================
 echo URL: http://localhost:%PORT%
 echo.
 
-REM Check if Ollama is already running
-echo Checking Ollama status...
-powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 2 -UseBasicParsing; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
-if %ERRORLEVEL% equ 0 (
-    echo [OK] Ollama is already running
-) else (
-    REM Check if port 11434 is in use
-    netstat -ano | findstr ":11434" | findstr "LISTENING" >nul
+if "%ENGINE%"=="ollama" (
+    REM Check if Ollama is already running
+    echo Checking Ollama status...
+    powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 2 -UseBasicParsing; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
     if %ERRORLEVEL% equ 0 (
-        echo [ERROR] Port 11434 is already in use by another process
-        echo Please stop the process using port 11434
-        pause
-        exit /b 1
+        echo [OK] Ollama is already running
+    ) else (
+        REM Check if port 11434 is in use
+        netstat -ano | findstr ":11434" | findstr "LISTENING" >nul
+        if %ERRORLEVEL% equ 0 (
+            echo [ERROR] Port 11434 is already in use by another process
+            echo Please stop the process using port 11434
+            pause
+            exit /b 1
+        )
+        echo Starting Ollama in background...
+        start /b cmd /c "ollama serve"
+        timeout /t 5 /nobreak >nul
     )
-    echo Starting Ollama in background...
-    start /b cmd /c "ollama serve"
-    timeout /t 5 /nobreak >nul
-)
 
-REM Verify Ollama is responding
-powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 5 -UseBasicParsing; exit 0 } catch { exit 1 }"
-if %ERRORLEVEL% neq 0 (
-    echo [WARNING] Ollama may not be fully ready yet
+    REM Verify Ollama is responding
+    powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:11434/api/version' -TimeoutSec 5 -UseBasicParsing; exit 0 } catch { exit 1 }"
+    if %ERRORLEVEL% neq 0 (
+        echo [WARNING] Ollama may not be fully ready yet
+    )
 )
 
 echo Starting OpenClaw Gateway...

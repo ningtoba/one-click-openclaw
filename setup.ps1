@@ -9,6 +9,14 @@ Write-Host "  OpenClaw Direct Setup" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Defaults
+$port = 18789
+$engine = "ollama"
+$llmBaseUrl = "http://localhost:11434/v1"
+$llmModel = "qwen3.5:9b"
+$dataDir = "$env:USERPROFILE\.openclaw"
+$workspace = "$dataDir\workspace"
+
 # Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($isAdmin) {
@@ -44,23 +52,41 @@ try {
     exit 1
 }
 
-# Check Ollama
 Write-Host ""
-Write-Host "[3/6] Checking Ollama..." -ForegroundColor Cyan
-try {
-    $ollamaVersion = ollama --version
-    Write-Host "[OK] Ollama found: $ollamaVersion" -ForegroundColor Green
-} catch {
-    Write-Host "[INFO] Ollama not found. Installing..." -ForegroundColor Yellow
-    # Install Ollama via PowerShell
-    $ollamaInstallScript = Invoke-WebRequest -Uri "https://ollama.com/install.ps1" -UseBasicParsing
-    Invoke-Expression $ollamaInstallScript.Content
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[ERROR] Failed to install Ollama" -ForegroundColor Red
-        Write-Host "Please install manually from https://ollama.com" -ForegroundColor Yellow
-    } else {
-        Write-Host "[OK] Ollama installed" -ForegroundColor Green
+Write-Host "Select Inference Engine:"
+Write-Host "1) Ollama (Local, default)"
+Write-Host "2) LM Studio (OpenAI Compatible)"
+$engineChoice = Read-Host "Choice [1]"
+
+if ($engineChoice -eq "2") {
+    $engine = "lmstudio"
+    $llmBaseUrl = "http://localhost:1234/v1"
+    $llmModel = "model-identifier"
+    Write-Host "Using LM Studio (OpenAI Compatible API)" -ForegroundColor Green
+} else {
+    $engine = "ollama"
+    Write-Host "Using Ollama" -ForegroundColor Green
+}
+
+if ($engine -eq "ollama") {
+    # Check Ollama
+    Write-Host ""
+    Write-Host "[3/6] Checking Ollama..." -ForegroundColor Cyan
+    try {
+        $ollamaVersion = ollama --version
+        Write-Host "[OK] Ollama found: $ollamaVersion" -ForegroundColor Green
+    } catch {
+        Write-Host "[INFO] Ollama not found. Installing..." -ForegroundColor Yellow
+        # Install Ollama via PowerShell
+        $ollamaInstallScript = Invoke-WebRequest -Uri "https://ollama.com/install.ps1" -UseBasicParsing
+        Invoke-Expression $ollamaInstallScript.Content
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[ERROR] Failed to install Ollama" -ForegroundColor Red
+            Write-Host "Please install manually from https://ollama.com" -ForegroundColor Yellow
+        } else {
+            Write-Host "[OK] Ollama installed" -ForegroundColor Green
+        }
     }
 }
 
@@ -80,13 +106,6 @@ try {
 }
 
 Write-Host ""
-
-# Defaults
-$port = 18789
-$llmBaseUrl = "http://localhost:11434/v1"
-$llmModel = "qwen3.5:9b"
-$dataDir = "$env:USERPROFILE\.openclaw"
-$workspace = "$dataDir\workspace"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Configuration" -ForegroundColor Cyan
@@ -130,20 +149,22 @@ Write-Host "[OK] Skills installed" -ForegroundColor Green
 Write-Host ""
 
 # Check/Install Ollama model
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Checking Ollama model..." -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+if ($engine -eq "ollama") {
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Checking Ollama model..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
 
-$modelList = ollama list 2>&1
-if ($modelList -match $llmModel) {
-    Write-Host "[OK] Model '$llmModel' already installed" -ForegroundColor Green
-} else {
-    Write-Host "Model not found. Pulling '$llmModel'..." -ForegroundColor Yellow
-    ollama pull $llmModel
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "[OK] Model installed" -ForegroundColor Green
+    $modelList = ollama list 2>&1
+    if ($modelList -match $llmModel) {
+        Write-Host "[OK] Model '$llmModel' already installed" -ForegroundColor Green
     } else {
-        Write-Host "[WARNING] Could not pull model. Will use default." -ForegroundColor Yellow
+        Write-Host "Model not found. Pulling '$llmModel'..." -ForegroundColor Yellow
+        ollama pull $llmModel
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] Model installed" -ForegroundColor Green
+        } else {
+            Write-Host "[WARNING] Could not pull model. Will use default." -ForegroundColor Yellow
+        }
     }
 }
 
@@ -258,47 +279,49 @@ if ($firewallChoice -eq "" -or $firewallChoice -eq "y" -or $firewallChoice -eq "
     Write-Host "Localhost binding still protects from external access" -ForegroundColor Gray
 }
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Starting Ollama..." -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+if ($engine -eq "ollama") {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Starting Ollama..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
 
-# Check if Ollama is already running on port 11434
-$ollamaRunning = $false
-try {
-    $testConnection = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
-    if ($testConnection.StatusCode -eq 200) {
-        $ollamaRunning = $true
-        Write-Host "[OK] Ollama is already running" -ForegroundColor Green
+    # Check if Ollama is already running on port 11434
+    $ollamaRunning = $false
+    try {
+        $testConnection = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+        if ($testConnection.StatusCode -eq 200) {
+            $ollamaRunning = $true
+            Write-Host "[OK] Ollama is already running" -ForegroundColor Green
+        }
+    } catch {
+        # Ollama not running, will start it
     }
-} catch {
-    # Ollama not running, will start it
-}
 
-if (-not $ollamaRunning) {
-    # Check if port 11434 is in use by another process
-    $portInUse = Get-NetTCPConnection -LocalPort 11434 -ErrorAction SilentlyContinue
-    if ($portInUse) {
-        Write-Host "[ERROR] Port 11434 is already in use by another process" -ForegroundColor Red
-        Write-Host "Please stop the process using port 11434 or configure a different Ollama port" -ForegroundColor Yellow
-        Read-Host "Press Enter to exit..."
-        exit 1
+    if (-not $ollamaRunning) {
+        # Check if port 11434 is in use by another process
+        $portInUse = Get-NetTCPConnection -LocalPort 11434 -ErrorAction SilentlyContinue
+        if ($portInUse) {
+            Write-Host "[ERROR] Port 11434 is already in use by another process" -ForegroundColor Red
+            Write-Host "Please stop the process using port 11434 or configure a different Ollama port" -ForegroundColor Yellow
+            Read-Host "Press Enter to exit..."
+            exit 1
+        }
+        
+        # Start Ollama in background
+        Write-Host "Starting Ollama service..." -ForegroundColor Cyan
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "ollama serve"
+        Start-Sleep -Seconds 5
+    } else {
+        Write-Host "[INFO] Skipping Ollama start (already running)" -ForegroundColor Gray
     }
-    
-    # Start Ollama in background
-    Write-Host "Starting Ollama service..." -ForegroundColor Cyan
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "ollama serve"
-    Start-Sleep -Seconds 5
-} else {
-    Write-Host "[INFO] Skipping Ollama start (already running)" -ForegroundColor Gray
-}
 
-# Verify Ollama is responding
-try {
-    $verifyOllama = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 5 -UseBasicParsing
-    Write-Host "[OK] Ollama is responding" -ForegroundColor Green
-} catch {
-    Write-Host "[WARNING] Ollama may not be fully ready yet" -ForegroundColor Yellow
+    # Verify Ollama is responding
+    try {
+        $verifyOllama = Invoke-WebRequest -Uri "http://localhost:11434/api/version" -TimeoutSec 5 -UseBasicParsing
+        Write-Host "[OK] Ollama is responding" -ForegroundColor Green
+    } catch {
+        Write-Host "[WARNING] Ollama may not be fully ready yet" -ForegroundColor Yellow
+    }
 }
 
 Write-Host "========================================" -ForegroundColor Cyan

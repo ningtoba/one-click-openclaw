@@ -11,6 +11,12 @@ echo "  OpenClaw Direct Setup"
 echo "========================================"
 echo ""
 
+# Default Configuration
+PORT="${PORT:-18789}"
+ENGINE="ollama"
+LLM_URL="http://localhost:11434/v1"
+MODEL="qwen3.5:9b"
+
 # Check if running as root
 if [ "$EUID" -eq 0 ]; then
     echo "[ERROR] Running as root detected!"
@@ -43,20 +49,39 @@ if ! command -v npm &> /dev/null; then
 fi
 echo "OK: $(npm --version)"
 
-# Check Ollama
+# Inference Engine Selection
 echo ""
-echo "[3/6] Checking Ollama..."
-if ! command -v ollama &> /dev/null; then
-    echo "Ollama not found. Installing..."
-    if command -v curl &> /dev/null; then
-        curl -fsSL https://ollama.com/install.sh | sh
-    else
-        echo "ERROR: curl not found. Install Ollama manually from https://ollama.com"
-        read -p "Press Enter to exit..."
-        exit 1
-    fi
+echo "Select Inference Engine:"
+echo "1) Ollama (Local, default)"
+echo "2) LM Studio (OpenAI Compatible)"
+read -p "Choice [1]: " ENGINE_CHOICE
+
+if [ "$ENGINE_CHOICE" = "2" ]; then
+    ENGINE="lmstudio"
+    LLM_URL="http://localhost:1234/v1"
+    MODEL="model-identifier"
+    echo "Using LM Studio (OpenAI Compatible API)"
+else
+    ENGINE="ollama"
+    echo "Using Ollama"
 fi
-echo "OK: Ollama found"
+
+if [ "$ENGINE" = "ollama" ]; then
+    # Check Ollama
+    echo ""
+    echo "[3/6] Checking Ollama..."
+    if ! command -v ollama &> /dev/null; then
+        echo "Ollama not found. Installing..."
+        if command -v curl &> /dev/null; then
+            curl -fsSL https://ollama.com/install.sh | sh
+        else
+            echo "ERROR: curl not found. Install Ollama manually from https://ollama.com"
+            read -p "Press Enter to exit..."
+            exit 1
+        fi
+    fi
+    echo "OK: Ollama found"
+fi
 
 # Check VRAM
 echo ""
@@ -82,32 +107,31 @@ else
     echo "Assuming system has sufficient memory"
 fi
 
-# Configuration
+# Port and URL Configuration
 echo ""
 echo "[5/6] Configuration"
 echo "-------------------------"
-PORT="${PORT:-18789}"
-LLM_URL="${LLM_URL:-http://localhost:11434/v1}"
-MODEL="${MODEL:-qwen3.5:9b}"
 
 read -p "Port [$PORT]: " CUSTOM_PORT
 [ -n "$CUSTOM_PORT" ] && PORT="$CUSTOM_PORT"
 
-read -p "Ollama URL [$LLM_URL]: " CUSTOM_LLM
+read -p "LLM URL [$LLM_URL]: " CUSTOM_LLM
 [ -n "$CUSTOM_LLM" ] && LLM_URL="$CUSTOM_LLM"
 
 read -p "Model name [$MODEL]: " CUSTOM_MODEL
 [ -n "$CUSTOM_MODEL" ] && MODEL="$CUSTOM_MODEL"
 
 # Check/Install model
-echo ""
-echo "Checking Ollama model: $MODEL"
-if ollama list | grep -q "$MODEL"; then
-    echo "OK: Model already installed"
-else
-    echo "Model not found. Pulling from Ollama library..."
-    ollama pull "$MODEL"
-    echo "OK: Model installed"
+if [ "$ENGINE" = "ollama" ]; then
+    echo ""
+    echo "Checking Ollama model: $MODEL"
+    if ollama list | grep -q "$MODEL"; then
+        echo "OK: Model already installed"
+    else
+        echo "Model not found. Pulling from Ollama library..."
+        ollama pull "$MODEL"
+        echo "OK: Model installed"
+    fi
 fi
 
 # Install OpenClaw
@@ -175,47 +199,54 @@ else
     echo "Localhost binding still protects from external access"
 fi
 
-# Start Ollama and OpenClaw
+if [ "$ENGINE" = "ollama" ]; then
+    # Start Ollama and OpenClaw
+    echo ""
+    echo "========================================"
+    echo "  Starting Ollama..."
+    echo "========================================"
+
+    # Check if Ollama is already running
+    echo "Checking Ollama status..."
+    if curl -s --connect-timeout 2 http://localhost:11434/api/version > /dev/null 2>&1; then
+        echo "[OK] Ollama is already running"
+    else
+        # Check if port 11434 is in use
+        if command -v lsof &> /dev/null; then
+            if lsof -i :11434 > /dev/null 2>&1; then
+                echo "[ERROR] Port 11434 is already in use by another process"
+                echo "Please stop the process using port 11434"
+                read -p "Press Enter to exit..."
+                exit 1
+            fi
+        elif command -v netstat &> /dev/null; then
+            if netstat -tuln | grep -q ":11434"; then
+                echo "[ERROR] Port 11434 is already in use by another process"
+                echo "Please stop the process using port 11434"
+                read -p "Press Enter to exit..."
+                exit 1
+            fi
+        fi
+        
+        echo "Starting Ollama..."
+        ollama serve &
+        sleep 5
+    fi
+
+    # Verify Ollama is responding
+    if curl -s --connect-timeout 5 http://localhost:11434/api/version > /dev/null 2>&1; then
+        echo "[OK] Ollama is responding"
+    else
+        echo "[WARNING] Ollama may not be fully ready yet"
+    fi
+fi
+
 echo ""
 echo "========================================"
 echo "  DONE!"
 echo "========================================"
 echo "URL: http://localhost:$PORT"
 echo ""
-
-# Check if Ollama is already running
-echo "Checking Ollama status..."
-if curl -s --connect-timeout 2 http://localhost:11434/api/version > /dev/null 2>&1; then
-    echo "[OK] Ollama is already running"
-else
-    # Check if port 11434 is in use
-    if command -v lsof &> /dev/null; then
-        if lsof -i :11434 > /dev/null 2>&1; then
-            echo "[ERROR] Port 11434 is already in use by another process"
-            echo "Please stop the process using port 11434"
-            read -p "Press Enter to exit..."
-            exit 1
-        fi
-    elif command -v netstat &> /dev/null; then
-        if netstat -tuln | grep -q ":11434"; then
-            echo "[ERROR] Port 11434 is already in use by another process"
-            echo "Please stop the process using port 11434"
-            read -p "Press Enter to exit..."
-            exit 1
-        fi
-    fi
-    
-    echo "Starting Ollama..."
-    ollama serve &
-    sleep 5
-fi
-
-# Verify Ollama is responding
-if curl -s --connect-timeout 5 http://localhost:11434/api/version > /dev/null 2>&1; then
-    echo "[OK] Ollama is responding"
-else
-    echo "[WARNING] Ollama may not be fully ready yet"
-fi
 
 echo "Starting OpenClaw Gateway..."
 openclaw gateway &
