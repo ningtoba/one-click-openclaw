@@ -136,8 +136,24 @@ fi
 
 # Install OpenClaw
 echo ""
-echo "[6/6] Installing OpenClaw..."
-npm install -g openclaw
+echo "[6/6] Checking OpenClaw..."
+if command -v openclaw &> /dev/null; then
+    echo "OpenClaw is already installed ($(openclaw -V))."
+    echo "Updating to latest version..."
+    npm install -g openclaw
+    
+    read -p "OpenClaw is already configured on this machine. Overwrite configuration with new settings? (y/n, default: n): " RECONFIGURE
+    if [ "$RECONFIGURE" = "y" ] || [ "$RECONFIGURE" = "Y" ]; then
+        SHOULD_CONFIG="true"
+    else
+        echo "Keeping existing configuration."
+        SHOULD_CONFIG="false"
+    fi
+else
+    echo "Installing OpenClaw..."
+    npm install -g openclaw
+    SHOULD_CONFIG="true"
+fi
 echo "OK"
 
 # Install ClawHub and skills
@@ -149,11 +165,13 @@ clawhub install event-monitor
 echo "OK"
 
 # Create config
-echo ""
-echo "Creating config..."
-export PORT LLM MODEL
-node "$(dirname "$0")/create-config.js"
-echo "OK"
+if [ "$SHOULD_CONFIG" = "true" ]; then
+    echo ""
+    echo "Creating/Updating configuration..."
+    export PORT LLM MODEL
+    node "$(dirname "$0")/create-config.js"
+    echo "OK"
+fi
 
 # Optional: Configure firewall for additional security
 echo ""

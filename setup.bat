@@ -120,12 +120,22 @@ if "%ENGINE%"=="ollama" (
 )
 
 echo.
-echo [6/6] Installing OpenClaw...
-cmd /c "npm install -g openclaw"
-if %ERRORLEVEL% neq 0 (
-    echo ERROR: Failed to install OpenClaw
-    pause
-    exit /b 1
+echo [6/6] Checking OpenClaw...
+where openclaw >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo OpenClaw already installed. Updating...
+    cmd /c "npm install -g openclaw"
+    set /p RECONFIGURE="OpenClaw is already configured on this machine. Overwrite configuration with entries? (y/n, default: n): "
+    if /i "!RECONFIGURE!"=="y" (
+        set SHOULD_CONFIG=true
+    ) else (
+        echo Keeping existing configuration.
+        set SHOULD_CONFIG=false
+    )
+) else (
+    echo Installing OpenClaw...
+    cmd /c "npm install -g openclaw"
+    set SHOULD_CONFIG=true
 )
 echo OK
 
@@ -139,10 +149,12 @@ if %ERRORLEVEL% neq 0 (
 )
 echo OK
 
-echo.
-echo Creating config...
-cmd /c "cd /d %SCRIPT_DIR% && set PORT=%PORT% && set LLM=%LLM_URL% && set MODEL=%MODEL% && node create-config.js"
-echo OK
+if "%SHOULD_CONFIG%"=="true" (
+    echo.
+    echo Creating/Updating configuration...
+    cmd /c "cd /d %SCRIPT_DIR% && set PORT=%PORT% && set LLM=%LLM_URL% && set MODEL=%MODEL% && node create-config.js"
+    echo OK
+)
 
 echo.
 echo ========================================

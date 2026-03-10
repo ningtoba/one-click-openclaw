@@ -121,19 +121,32 @@ $customModel = Read-Host "LLM Model (default $llmModel)"
 if ($customModel) { $llmModel = $customModel }
 
 Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Installing OpenClaw..." -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "[6/6] Checking OpenClaw..." -ForegroundColor Cyan
 
-npm install -g openclaw
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Failed to install OpenClaw" -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit 1
+$openclawPath = Get-Command openclaw -ErrorAction SilentlyContinue
+if ($openclawPath) {
+    Write-Host "OpenClaw is already installed ($(openclaw --version))." -ForegroundColor Gray
+    Write-Host "Updating to latest version..." -ForegroundColor Yellow
+    npm install -g openclaw
+    $reconfigureChoice = Read-Host "OpenClaw is already configured on this machine. Overwrite configuration with entries? (y/n, default: n)"
+    if ($reconfigureChoice -eq "y" -or $reconfigureChoice -eq "Y") {
+        $shouldConfig = $true
+    } else {
+        Write-Host "Keeping existing configuration." -ForegroundColor Gray
+        $shouldConfig = $false
+    }
+} else {
+    Write-Host "Installing OpenClaw..." -ForegroundColor Cyan
+    npm install -g openclaw
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Failed to install OpenClaw" -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+    $shouldConfig = $true
 }
 
-Write-Host "[OK] OpenClaw installed" -ForegroundColor Green
+Write-Host "[OK] OpenClaw updated/installed" -ForegroundColor Green
 Write-Host ""
 
 # Install ClawHub and skills
@@ -168,18 +181,20 @@ if ($engine -eq "ollama") {
     }
 }
 
-# Create directories
-New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
-New-Item -ItemType Directory -Force -Path $workspace | Out-Null
+# Create config
+if ($shouldConfig) {
+    # Create directories
+    New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $workspace | Out-Null
 
-# Generate auth token
-$authToken = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
+    # Generate auth token
+    $authToken = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
 
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Creating config..." -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Creating/Updating configuration..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
 
-# Create config using Node.js via PowerShell
+    # Create config using Node.js via PowerShell
 $nodeScript = @"
 const fs = require('fs');
 const modelKey = 'localllm/' + '$llmModel';
@@ -238,8 +253,9 @@ console.log('Config created');
 
 node -e $nodeScript
 
-Write-Host "[OK] Config created at $dataDir\openclaw.json" -ForegroundColor Green
-Write-Host ""
+    Write-Host "[OK] Config updated at $dataDir\openclaw.json" -ForegroundColor Green
+    Write-Host ""
+}
 
 # Optional: Configure Windows Firewall for additional security
 Write-Host "========================================" -ForegroundColor Cyan
