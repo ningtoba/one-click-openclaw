@@ -42,7 +42,7 @@ const config = {
     gateway: {
         port: parseInt(port),
         mode: 'local',
-        bind: '127.0.0.1',  // Localhost-only for security (no external access)
+        bind: 'loopback',  // Localhost-only for security (using modern bind mode)
         auth: { mode: 'token', token: token },
         tailscale: { mode: 'off' },  // Disabled by default (no account required)
         nodes: { denyCommands: ['camera.snap', 'camera.clip', 'screen.record', 'exec'] }

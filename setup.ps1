@@ -28,35 +28,46 @@ if ($isAdmin) {
     exit 1
 }
 
-# Check if Node.js is installed
-Write-Host "[1/5] Checking Node.js..." -ForegroundColor Cyan
-$nodeInstalled = $false
-try {
-    $nodeVersion = node --version
-    Write-Host "[OK] Node.js found: $nodeVersion" -ForegroundColor Green
-    $nodeInstalled = $true
-} catch {
-    Write-Host "[INFO] Node.js is not installed. Using winget..." -ForegroundColor Yellow
-    # Install Node.js silently using winget in user scope
+# Check if Node.js is installed and version is >= 22.16.0
+Write-Host "[1/5] Checking Node.js (Requires >= 22.16.0)..." -ForegroundColor Cyan
+$needNode = $true
+
+function Get-NodeVersion {
+    try {
+        $nodeV = node --version | Out-String
+        return $nodeV.Trim().Substring(1)
+    } catch {
+        return $null
+    }
+}
+
+$nodeVerString = Get-NodeVersion
+if ($nodeVerString) {
+    $vParts = $nodeVerString.Split('.')
+    $major = [int]$vParts[0]
+    $minor = [int]$vParts[1]
+    if ($major -gt 22 -or ($major -eq 22 -and $minor -ge 16)) {
+        Write-Host "[OK] Node.js version $nodeVerString found." -ForegroundColor Green
+        $needNode = $false
+    } else {
+        Write-Host "[INFO] Found Node.js $nodeVerString, but OpenClaw requires >= 22.16.0." -ForegroundColor Yellow
+    }
+}
+
+if ($needNode) {
+    Write-Host "[INFO] Installing correct Node.js via winget..." -ForegroundColor Yellow
+    # Install Node.js LTS silently
+    # Winget might not let us pin specifically to 22.16.0 but usually LTS is newer
     winget install --id OpenJS.NodeJS.LTS -e --silent --scope user --accept-package-agreements --accept-source-agreements
     
-    # Reload environment variables
-    foreach ($level in "Machine", "User") {
-        [Environment]::GetEnvironmentVariables($level).GetEnumerator() | ForEach-Object {
-            if ($_.Key -eq "Path") {
-                $env:Path = $_.Value + ";" + $env:Path
-            } else {
-                Set-Item "Env:\$($_.Key)" $_.Value
-            }
-        }
-    }
+    # Reload environment
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
     
-    try {
-        $nodeVersion = node --version
-        Write-Host "[OK] Node.js installed: $nodeVersion" -ForegroundColor Green
-        $nodeInstalled = $true
-    } catch {
-        Write-Host "[ERROR] Failed to install Node.js via winget. Please install manually." -ForegroundColor Red
+    $newNodeVer = Get-NodeVersion
+    if ($newNodeVer) {
+        Write-Host "[OK] Node.js installed: $newNodeVer" -ForegroundColor Green
+    } else {
+        Write-Host "[ERROR] Node.js installation failed. Install from nodejs.org." -ForegroundColor Red
         Start-Sleep -Seconds 5
         exit 1
     }
@@ -173,6 +184,10 @@ $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
 Set-Location $scriptDir
 node create-config.js
+
+# Run OpenClaw Doctor to apply any migrations and verify setup
+Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
+openclaw doctor --repair --yes --non-interactive
 
 # Apply Security Features (Firewall)
 Write-Host "Applying security firewall rules..." -ForegroundColor Cyan

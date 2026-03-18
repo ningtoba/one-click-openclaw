@@ -29,9 +29,23 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # Check/Install Node.js
-echo "[1/5] Checking Node.js..."
-if ! command -v node &> /dev/null; then
-    echo "INFO: Node.js not found. Installing via NVM (Node Version Manager)..."
+echo "[1/5] Checking Node.js (Requires >= 22.16.0)..."
+NEED_NODE=true
+if command -v node &> /dev/null; then
+    NODE_VER=$(node -v | cut -d'v' -f2)
+    # Simple semantic version check (requires node 22.16.0 or higher)
+    MAJOR=$(echo "$NODE_VER" | cut -d'.' -f1)
+    MINOR=$(echo "$NODE_VER" | cut -d'.' -f2)
+    if [ "$MAJOR" -gt 22 ] || ([ "$MAJOR" -eq 22 ] && [ "$MINOR" -ge 16 ]); then
+        echo "OK: Node.js version $NODE_VER found."
+        NEED_NODE=false
+    else
+        echo "INFO: Found Node.js $NODE_VER, but OpenClaw requires >= 22.16.0."
+    fi
+fi
+
+if [ "$NEED_NODE" = true ]; then
+    echo "INFO: Installing correct Node.js version via NVM..."
     export NVM_DIR="$HOME/.nvm"
     if [ ! -s "$NVM_DIR/nvm.sh" ]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -39,10 +53,9 @@ if ! command -v node &> /dev/null; then
     # Load NVM
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     
-    nvm install --lts
-    nvm use --lts
-else
-    echo "OK: $(node --version)"
+    nvm install 22.16.0
+    nvm use 22.16.0
+    nvm alias default 22.16.0
 fi
 
 if ! command -v npm &> /dev/null; then
@@ -132,6 +145,10 @@ install_skill "event-monitor" || true
 echo ""
 echo "[5/5] Configuring OpenClaw..."
 node "$(dirname "$0")/create-config.js"
+
+# Run OpenClaw Doctor to apply any migrations and verify setup
+echo "Running diagnostics and repairs (openclaw doctor)..."
+openclaw doctor --repair --yes --non-interactive
 
 # Security Hardening - Firewall (Optional but automatic)
 echo "Setting up Firewall (silent)..."
