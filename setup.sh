@@ -92,9 +92,42 @@ echo ""
 echo "[4/5] Installing OpenClaw and Skills..."
 npm install -g openclaw@latest clawhub@latest
 
+# Function to install a skill with retries and check if already installed
+install_skill() {
+    local skill=$1
+    local max_attempts=3
+    local attempt=1
+    local wait_time=5
+
+    # Check if skill is already installed
+    if clawhub list | grep -q "$skill"; then
+        echo "OK: Skill '$skill' is already installed."
+        return 0
+    fi
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "Installing skill '$skill' (Attempt $attempt/$max_attempts)..."
+        if clawhub install "$skill"; then
+            echo "OK: Skill '$skill' installed successfully."
+            return 0
+        else
+            echo "WARNING: Failed to install skill '$skill'."
+            if [ $attempt -lt $max_attempts ]; then
+                echo "Retrying in $wait_time seconds..."
+                sleep $wait_time
+                wait_time=$((wait_time * 2))
+            fi
+        fi
+        attempt=$((attempt + 1))
+    done
+
+    echo "ERROR: Failed to install skill '$skill' after $max_attempts attempts."
+    return 1
+}
+
 echo "Installing skills: pc-assistant, event-monitor..."
-clawhub install pc-assistant
-clawhub install event-monitor
+install_skill "pc-assistant" || true
+install_skill "event-monitor" || true
 
 echo ""
 echo "[5/5] Configuring OpenClaw..."

@@ -125,11 +125,46 @@ if ($modelList -match $llmModel) {
     ollama pull $llmModel
 }
 
-Write-Host ""
 Write-Host "[4/5] Installing OpenClaw and Skills..." -ForegroundColor Cyan
 npm install -g openclaw@latest clawhub@latest
-clawhub install ningtoba/pc-assistant
-clawhub install event-monitor
+
+# Function to install a skill with retries and check if already installed
+function Install-Skill {
+    param([string]$skill)
+    $maxAttempts = 3
+    $attempt = 1
+    $waitTime = 5
+
+    # Check if skill is already installed
+    $listOutput = clawhub list | Out-String
+    if ($listOutput -match $skill) {
+        Write-Host "OK: Skill '$skill' is already installed." -ForegroundColor Green
+        return
+    }
+
+    while ($attempt -le $maxAttempts) {
+        Write-Host "Installing skill '$skill' (Attempt $attempt/$maxAttempts)..." -ForegroundColor Cyan
+        clawhub install $skill
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "OK: Skill '$skill' installed successfully." -ForegroundColor Green
+            return
+        } else {
+            Write-Host "WARNING: Failed to install skill '$skill'." -ForegroundColor Yellow
+            if ($attempt -lt $maxAttempts) {
+                Write-Host "Retrying in $waitTime seconds..." -ForegroundColor Cyan
+                Start-Sleep -Seconds $waitTime
+                $waitTime *= 2
+            }
+        }
+        $attempt++
+    }
+
+    Write-Host "ERROR: Failed to install skill '$skill' after $maxAttempts attempts." -ForegroundColor Red
+}
+
+Write-Host "Installing skills: pc-assistant, event-monitor..." -ForegroundColor Cyan
+Install-Skill "pc-assistant"
+Install-Skill "event-monitor"
 Write-Host "[OK] Core and Skills installed" -ForegroundColor Green
 
 Write-Host ""
