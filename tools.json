@@ -1,8 +1,10 @@
 {
   "tools": [],
   "package": {
+    "name": "openclaw-direct",
     "type": "installer",
     "scripts": ["setup.bat", "setup.ps1", "setup.sh"],
-    "description": "One-click OpenClaw installer with security hardening"
+    "description": "One-click OpenClaw installer with security hardening",
+    "version": "1.0.1"
   }
 }

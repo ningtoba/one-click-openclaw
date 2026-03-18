@@ -47,39 +47,15 @@ That's it!
 
 ## Configuration Options
 
-During setup, you'll be asked for:
+This is a true one-click installer. It will automatically:
+- Install Node.js (via NVM or Winget) if missing
+- Install Ollama if missing
+- Pull the `qwen3.5:9b` model
+- Install OpenClaw, pc-assistant, and event-monitor skills
+- Enforce localhost-only security and disable tailscale
+- Start the gateway and open your browser
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| Port | 18789 | Gateway port |
-| LLM Base URL | http://localhost:11434/v1 | Your LLM API endpoint |
-| LLM Model | qwen3.5:9b | Model ID |
-
-## Common LLM Setups
-
-### Ollama
-```
-LLM Base URL: http://localhost:11434/v1
-LLM Model: llama3
-```
-
-### LM Studio
-```
-LLM Base URL: http://localhost:1234/v1
-LLM Model: llama-3-8b
-```
-
-### vLLM
-```
-LLM Base URL: http://localhost:8000/v1
-LLM Model: mistral-7b
-```
-
-### OpenAI
-```
-LLM Base URL: https://api.openai.com/v1
-LLM Model: gpt-4o
-```
+No prompts, interactivity, or user intervention required!
 
 After installation, edit `~/.openclaw/openclaw.json` to add your API key.
 
@@ -125,6 +101,12 @@ rm -rf ~/.openclaw
 4. **Ollama port conflict** - Script detects if port 11434 is already in use
 
 ## Version History
+
+### 1.0.1
+- Complete rework to one-click unattended installer
+- Auto-installs Node.js (NVM/Winget) and Ollama if missing
+- Auto-pulls qwen3.5:9b model
+- Enforces strict zero-interaction setup for maximum convenience
 
 ### 1.0.0
 - Initial release

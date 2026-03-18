@@ -1,0 +1,6 @@
+{
+  "name": "openclaw-direct",
+  "version": "1.0.1",
+  "description": "One-click OpenClaw installer with security hardening",
+  "scripts": {}
+}
