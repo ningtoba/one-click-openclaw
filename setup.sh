@@ -93,7 +93,7 @@ echo "[4/5] Installing OpenClaw and Skills..."
 npm install -g openclaw@latest clawhub@latest
 
 echo "Installing skills: pc-assistant, event-monitor..."
-clawhub install ningtoba/pc-assistant
+clawhub install pc-assistant
 clawhub install event-monitor
 
 echo ""
