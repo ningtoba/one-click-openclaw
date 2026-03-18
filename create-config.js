@@ -47,20 +47,38 @@ const config = {
         tailscale: { mode: 'off' },  // Disabled by default (no account required)
         nodes: { denyCommands: ['camera.snap', 'camera.clip', 'screen.record', 'exec'] }
     },
-    channels: {
-        "webchat": {
-            "account": "default",
-            "config": {}
-        }
-    },
+    channels: {},
     hooks: { internal: { enabled: true, entries: {} } },
     commands: { native: 'auto', nativeSkills: 'auto' },
     messages: { ackReactionScope: 'group-mentions' }
 };
 
+const sessionDir = dataDir + '/agents/main/sessions';
 fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(dataDir + '/workspace', { recursive: true });
+fs.mkdirSync(sessionDir, { recursive: true });
+
+// Set permissions on Linux/Mac
+if (process.platform !== 'win32') {
+    try {
+        fs.chmodSync(dataDir, 0o700);
+        console.log('Set permissions 700 on ' + dataDir);
+    } catch (e) {
+        console.warn('Could not set permissions on ' + dataDir);
+    }
+}
+
 fs.writeFileSync(dataDir + '/openclaw.json', JSON.stringify(config, null, 2));
+
+// Set permissions for config file
+if (process.platform !== 'win32') {
+    try {
+        fs.chmodSync(dataDir + '/openclaw.json', 0o600);
+        console.log('Set permissions 600 on config file');
+    } catch (e) {
+        console.warn('Could not set permissions on config file');
+    }
+}
 
 console.log('Config created at ' + dataDir + '/openclaw.json');
 console.log('Token: ' + token);
