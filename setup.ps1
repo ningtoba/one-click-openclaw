@@ -211,7 +211,11 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Starting OpenClaw..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
-Start-Process powershell -ArgumentList "-WindowStyle Hidden", "-Command", "openclaw gateway"
+Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
+openclaw gateway install --yes
+
+Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
+openclaw gateway start
 Start-Sleep -Seconds 3
 
 # Wait for OpenClaw to start

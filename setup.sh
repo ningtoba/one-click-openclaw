@@ -167,7 +167,11 @@ echo "  DONE! Launching OpenClaw..."
 echo "========================================"
 echo "URL: http://localhost:$PORT"
 
-openclaw gateway >/dev/null 2>&1 &
+echo "Installing OpenClaw Gateway service..."
+openclaw gateway install --yes
+
+echo "Starting OpenClaw Gateway..."
+openclaw gateway start
 sleep 3
 
 # Wait for gateway to be ready
