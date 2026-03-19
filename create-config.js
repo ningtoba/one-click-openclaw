@@ -68,10 +68,23 @@ const config = {
     messages: { ackReactionScope: 'group-mentions' }
 };
 
+const workspaceDir = dataDir + '/workspace';
 const sessionDir = dataDir + '/agents/main/sessions';
 fs.mkdirSync(dataDir, { recursive: true });
-fs.mkdirSync(dataDir + '/workspace', { recursive: true });
+fs.mkdirSync(workspaceDir, { recursive: true });
 fs.mkdirSync(sessionDir, { recursive: true });
+
+// Identity
+const identityContent = `# Identity\n\n- Name: ${config.agents.list[0].identity.name}\n- Emoji: ${config.agents.list[0].identity.emoji}\n- Theme: ${config.agents.list[0].identity.theme}\n`;
+fs.writeFileSync(workspaceDir + '/IDENTITY.md', identityContent);
+
+// Soul
+const soulContent = `# Soul\n\nYou are a highly efficient PC Assistant with predictive monitoring capabilities. You prioritize accuracy and performance. You have the following skills energized:\n\n- **PC Assistant**: Advanced system control and automation\n- **Event Monitor**: Predictive resource monitoring and alert detection\n`;
+fs.writeFileSync(workspaceDir + '/SOUL.md', soulContent);
+
+// Tools
+const toolsContent = `# Tools\n\nThe following skills are installed and available via ClawHub. You can use any tools defined in their SKILL.md files:\n\n- [pc-assistant](skills/pc-assistant)\n- [event-monitor](skills/event-monitor)\n\nNotes: Use predictive monitoring to analyze system trends.\n`;
+fs.writeFileSync(workspaceDir + '/TOOLS.md', toolsContent);
 
 // Set permissions on Linux/Mac
 if (process.platform !== 'win32') {
