@@ -45,7 +45,13 @@ const config = {
         bind: 'loopback',  // Localhost-only for security (using modern bind mode)
         auth: { mode: 'token', token: token },
         tailscale: { mode: 'off' },  // Disabled by default (no account required)
-        nodes: { denyCommands: ['camera.snap', 'camera.clip', 'screen.record', 'exec'] }
+        nodes: { denyCommands: [] } // Allow all commands for direct setup
+    },
+    skills: {
+        entries: {
+            'pc-assistant': { enabled: true },
+            'event-monitor': { enabled: true }
+        }
     },
     channels: {},
     hooks: { internal: { enabled: true, entries: {} } },
