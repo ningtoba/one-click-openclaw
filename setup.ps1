@@ -232,5 +232,7 @@ while ($retryCount -lt 15) {
     }
 }
 
+$DASH_URL = (openclaw dashboard --no-open | Select-String "http" | Select-Object -First 1).ToString().Split(' ')[-1]
+Write-Host "URL: $DASH_URL" -ForegroundColor Green
 Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan
-Start-Process "http://localhost:$port/?token=$setupToken"
+Start-Process "$DASH_URL"

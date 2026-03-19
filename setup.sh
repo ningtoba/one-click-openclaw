@@ -173,7 +173,8 @@ echo ""
 echo "========================================"
 echo "  DONE! Launching OpenClaw..."
 echo "========================================"
-echo "URL: http://localhost:$PORT/?token=$TOKEN"
+DASH_URL=$(openclaw dashboard --no-open | grep "http" | head -n 1 | awk '{print $NF}')
+echo "URL: $DASH_URL"
 
 # Wait for gateway to be ready
 echo "Waiting for gateway to start..."
@@ -189,9 +190,9 @@ done
 
 echo "Opening OpenClaw dashboard..."
 if command -v xdg-open &> /dev/null; then
-    xdg-open "http://localhost:$PORT/?token=$TOKEN"
+    xdg-open "$DASH_URL"
 elif command -v open &> /dev/null; then
-    open "http://localhost:$PORT/?token=$TOKEN"
+    open "$DASH_URL"
 elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    start "http://localhost:$PORT/?token=$TOKEN"
+    start "$DASH_URL"
 fi
