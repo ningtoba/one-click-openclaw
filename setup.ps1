@@ -178,6 +178,13 @@ Install-Skill "pc-assistant"
 Install-Skill "event-monitor"
 Write-Host "[OK] Core and Skills installed" -ForegroundColor Green
 
+Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
+openclaw gateway install --yes
+
+Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
+openclaw gateway start
+Start-Sleep -Seconds 3
+
 Write-Host ""
 Write-Host "[5/5] Configuring OpenClaw..." -ForegroundColor Cyan
 $scriptDir = $PSScriptRoot
@@ -206,17 +213,9 @@ try {
     }
 } catch { }
 
-Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Starting OpenClaw..." -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
-
-Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
-openclaw gateway install --yes
-
-Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
-openclaw gateway start
-Start-Sleep -Seconds 3
 
 # Wait for OpenClaw to start
 $retryCount = 0

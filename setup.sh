@@ -142,6 +142,12 @@ echo "Installing skills: pc-assistant, event-monitor..."
 install_skill "pc-assistant" || true
 install_skill "event-monitor" || true
 
+echo "Installing OpenClaw Gateway service..."
+sudo openclaw gateway install --yes || true
+
+echo "Starting OpenClaw Gateway..."
+openclaw gateway start || true
+
 echo ""
 echo "[5/5] Configuring OpenClaw..."
 node "$(dirname "$0")/create-config.js"
@@ -167,12 +173,7 @@ echo "  DONE! Launching OpenClaw..."
 echo "========================================"
 echo "URL: http://localhost:$PORT"
 
-echo "Installing OpenClaw Gateway service..."
-openclaw gateway install --yes
-
-echo "Starting OpenClaw Gateway..."
-openclaw gateway start
-sleep 3
+echo "URL: http://localhost:$PORT"
 
 # Wait for gateway to be ready
 echo "Waiting for gateway to start..."
