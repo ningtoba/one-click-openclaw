@@ -121,8 +121,8 @@ install_skill() {
 
     while [ $attempt -le $max_attempts ]; do
         echo "Installing skill '$skill' (Attempt $attempt/$max_attempts)..."
-        # Try npx clawhub first, then clawdhub as fallback
-        if npx clawhub install "$skill" || npx clawdhub install "$skill"; then
+        # Try npx clawhub first with explicit workdir and force, then clawdhub as fallback
+        if npx clawhub install "$skill" --force --workdir "$HOME/.openclaw" || npx clawdhub install "$skill" --force --workdir "$HOME/.openclaw"; then
             echo "OK: Skill '$skill' installed successfully."
             return 0
         else

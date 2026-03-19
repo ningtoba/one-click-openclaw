@@ -156,13 +156,14 @@ function Install-Skill {
     while ($attempt -le $maxAttempts) {
         Write-Host "Installing skill '$skill' (Attempt $attempt/$maxAttempts)..." -ForegroundColor Cyan
         
-        # Try npx clawhub first, then npx clawdhub as fallback
+        # Try npx clawhub first, then npx clawdhub as fallback (with explicit workdir and force)
         $success = $false
+        $dataDir = "$env:USERPROFILE\.openclaw"
         try {
-            npx clawhub install $skill
+            npx clawhub install $skill --force --workdir $dataDir
             if ($LASTEXITCODE -eq 0) { $success = $true }
             else {
-                npx clawdhub install $skill
+                npx clawdhub install $skill --force --workdir $dataDir
                 if ($LASTEXITCODE -eq 0) { $success = $true }
             }
         } catch { }
