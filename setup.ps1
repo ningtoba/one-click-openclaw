@@ -137,7 +137,7 @@ if ($modelList -match $llmModel) {
 }
 
 Write-Host "[4/5] Installing OpenClaw and Skills..." -ForegroundColor Cyan
-npm install -g openclaw@latest clawhub@latest
+npm install -g openclaw@latest clawhub@latest clawdhub@latest
 
 # Function to install a skill with retries and check if already installed
 function Install-Skill {
@@ -155,12 +155,23 @@ function Install-Skill {
 
     while ($attempt -le $maxAttempts) {
         Write-Host "Installing skill '$skill' (Attempt $attempt/$maxAttempts)..." -ForegroundColor Cyan
-        clawhub install $skill
-        if ($LASTEXITCODE -eq 0) {
+        
+        # Try npx clawhub first, then npx clawdhub as fallback
+        $success = $false
+        try {
+            npx clawhub install $skill
+            if ($LASTEXITCODE -eq 0) { $success = $true }
+            else {
+                npx clawdhub install $skill
+                if ($LASTEXITCODE -eq 0) { $success = $true }
+            }
+        } catch { }
+
+        if ($success) {
             Write-Host "OK: Skill '$skill' installed successfully." -ForegroundColor Green
             return
         } else {
-            Write-Host "WARNING: Failed to install skill '$skill'." -ForegroundColor Yellow
+            Write-Host "WARNING: Failed to install skill '$skill' with clawhub/clawdhub." -ForegroundColor Yellow
             if ($attempt -lt $maxAttempts) {
                 Write-Host "Retrying in $waitTime seconds..." -ForegroundColor Cyan
                 Start-Sleep -Seconds $waitTime

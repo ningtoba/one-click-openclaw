@@ -103,7 +103,7 @@ fi
 
 echo ""
 echo "[4/5] Installing OpenClaw and Skills..."
-npm install -g openclaw@latest clawhub@latest
+npm install -g openclaw@latest clawhub@latest clawdhub@latest
 
 # Function to install a skill with retries and check if already installed
 install_skill() {
@@ -121,11 +121,12 @@ install_skill() {
 
     while [ $attempt -le $max_attempts ]; do
         echo "Installing skill '$skill' (Attempt $attempt/$max_attempts)..."
-        if clawhub install "$skill"; then
+        # Try npx clawhub first, then clawdhub as fallback
+        if npx clawhub install "$skill" || npx clawdhub install "$skill"; then
             echo "OK: Skill '$skill' installed successfully."
             return 0
         else
-            echo "WARNING: Failed to install skill '$skill'."
+            echo "WARNING: Failed to install skill '$skill' with clawhub/clawdhub."
             if [ $attempt -lt $max_attempts ]; then
                 echo "Retrying in $wait_time seconds..."
                 sleep $wait_time
