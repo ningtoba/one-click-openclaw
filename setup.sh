@@ -173,8 +173,6 @@ echo "  DONE! Launching OpenClaw..."
 echo "========================================"
 echo "URL: http://localhost:$PORT"
 
-echo "URL: http://localhost:$PORT"
-
 # Wait for gateway to be ready
 echo "Waiting for gateway to start..."
 max_retries=15
