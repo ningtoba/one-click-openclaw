@@ -167,9 +167,19 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     fi
 fi
 
+# Workspace Skill Linking (Ensures the model picks them up with priority)
+echo "Ensuring skills are linked to workspace..."
+mkdir -p "$HOME/.openclaw/workspace/skills"
+ln -sf "$HOME/.openclaw/skills/pc-assistant" "$HOME/.openclaw/workspace/skills/pc-assistant"
+ln -sf "$HOME/.openclaw/skills/event-monitor" "$HOME/.openclaw/workspace/skills/event-monitor"
+
 # Run OpenClaw Doctor to apply any migrations and verify setup
 echo "Running diagnostics and repairs (openclaw doctor)..."
 openclaw doctor --repair --yes --non-interactive
+
+# Final gateway restart to ensure everything is loaded correctly
+echo "Finalizing gateway..."
+openclaw gateway restart
 
 echo ""
 echo "========================================"

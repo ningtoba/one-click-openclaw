@@ -21,11 +21,11 @@ const config = {
                     id: model,
                     name: model,
                     api: 'openai-completions',
-                    reasoning: false,
+                    reasoning: false, // Non-thinking mode (Direct Instruct)
                     input: ['text'],
                     cost: { input: 0, output: 0 },
-                    contextWindow: 200000,
-                    maxTokens: 20000
+                    contextWindow: 64000, // Optimized for local models
+                    maxTokens: 16000
                 }]
             }
         }
@@ -33,10 +33,12 @@ const config = {
     agents: {
         defaults: {
             model: { primary: modelKey },
-            models: { [modelKey]: {} },
+            models: { [modelKey]: { temperature: 0.1 } }, // Low temperature for stability
             workspace: dataDir + '/workspace',
-            compaction: { mode: 'safeguard' },
-            maxConcurrent: 4
+            compaction: { mode: 'auto', messages: 20 }, // Auto-compact context every 20 messages
+            maxConcurrent: 4,
+            soul: "You are a highly efficient and secure PC assistant. You execute tasks directly and concisely without verbose reasoning. You prioritize accuracy over conversation.",
+            automation: { enabled: true, cron: true } // Enable background automation
         }
     },
     gateway: {

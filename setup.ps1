@@ -224,9 +224,26 @@ try {
     }
 } catch { }
 
+# Workspace Skill Linking (Ensures the model picks them up with priority)
+Write-Host "Ensuring skills are linked to workspace..." -ForegroundColor Cyan
+$wsSkillsDir = "$dataDir\workspace\skills"
+if (-not (Test-Path $wsSkillsDir)) { New-Item -ItemType Directory -Path $wsSkillsDir -Force | Out-Null }
+# Create Junctions for priority access
+foreach ($skill in @("pc-assistant", "event-monitor")) {
+    $target = "$dataDir\skills\$skill"
+    $link = "$wsSkillsDir\$skill"
+    if ((Test-Path $target) -and (-not (Test-Path $link))) {
+        New-Item -ItemType Junction -Path $link -Value $target | Out-Null
+    }
+}
+
 # Run OpenClaw Doctor to apply any migrations and verify setup
 Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
 openclaw doctor --repair --yes --non-interactive
+
+# Restart Gateway to apply changes
+Write-Host "Finalizing gateway..." -ForegroundColor Cyan
+openclaw gateway restart
 
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Starting OpenClaw..." -ForegroundColor Green
