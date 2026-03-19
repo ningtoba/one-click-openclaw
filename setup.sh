@@ -112,9 +112,10 @@ install_skill() {
     local attempt=1
     local wait_time=5
 
-    # Check if skill is already installed
-    if clawhub list | grep -q "$skill"; then
-        echo "OK: Skill '$skill' is already installed."
+    # Check if skill directory actually exists locally
+    local skill_dir="$HOME/.openclaw/skills/$skill"
+    if [ -d "$skill_dir" ]; then
+        echo "OK: Skill '$skill' directory found at $skill_dir."
         return 0
     fi
 

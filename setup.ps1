@@ -146,10 +146,10 @@ function Install-Skill {
     $attempt = 1
     $waitTime = 5
 
-    # Check if skill is already installed
-    $listOutput = clawhub list | Out-String
-    if ($listOutput -match $skill) {
-        Write-Host "OK: Skill '$skill' is already installed." -ForegroundColor Green
+    # Check if skill directory actually exists locally
+    $skillDir = "$env:USERPROFILE\.openclaw\skills\$skill"
+    if (Test-Path $skillDir) {
+        Write-Host "OK: Skill '$skill' directory found at $skillDir." -ForegroundColor Green
         return
     }
 
