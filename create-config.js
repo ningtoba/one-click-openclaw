@@ -13,14 +13,14 @@ const config = {
     models: {
         providers: {
             locallm: {
-                baseUrl: llmUrl,
-                apiKey: '',
-                api: 'openai-completions',
+                baseUrl: llmUrl.replace('/v1', ''),
+                apiKey: 'ollama', // Required for native provider identification
+                api: 'ollama',
                 authHeader: false,
                 models: [{
                     id: model,
                     name: model,
-                    api: 'openai-completions',
+                    api: 'ollama',
                     reasoning: false, // Non-thinking mode (Direct Instruct)
                     input: ['text'],
                     cost: { input: 0, output: 0 },

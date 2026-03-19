@@ -111,7 +111,8 @@ try {
 
 if (-not $ollamaRunning) {
     Write-Host "Starting Ollama service..." -ForegroundColor Cyan
-    Start-Process powershell -ArgumentList "-WindowStyle Hidden", "-Command", "ollama serve"
+    $env:OLLAMA_NUM_CTX = 32000
+    Start-Process powershell -ArgumentList "-WindowStyle Hidden", "-Command", "`$env:OLLAMA_NUM_CTX=32000; ollama serve"
     Start-Sleep -Seconds 5
 }
 

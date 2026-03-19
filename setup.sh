@@ -78,6 +78,8 @@ echo "[3/5] Starting Ollama and pulling model $MODEL..."
 # Start Ollama service if not already running
 if ! curl -s --connect-timeout 2 http://localhost:11434/api/version > /dev/null 2>&1; then
     echo "Starting Ollama..."
+    # Ensure large context window for local models
+    export OLLAMA_NUM_CTX=32000
     ollama serve >/dev/null 2>&1 &
     sleep 5
 fi
