@@ -65,6 +65,7 @@ const config = {
     channels: {},
     hooks: { internal: { enabled: true, entries: {} } },
     commands: { native: 'auto', nativeSkills: 'auto' },
+    session: { retention: 100 },
     messages: { ackReactionScope: 'group-mentions' }
 };
 
@@ -79,7 +80,7 @@ const identityContent = `# Identity\n\n- Name: ${config.agents.list[0].identity.
 fs.writeFileSync(workspaceDir + '/IDENTITY.md', identityContent);
 
 // Soul
-const soulContent = `# Soul\n\nYou are a highly efficient PC Assistant with predictive monitoring capabilities. You prioritize accuracy and performance. You have the following skills energized:\n\n- **PC Assistant**: Advanced system control and automation\n- **Event Monitor**: Predictive resource monitoring and alert detection\n`;
+const soulContent = `# Soul\n\nYou are a highly efficient PC Assistant. **You have full memory of the current conversation history and must use it to provide context-aware answers.** You prioritize accuracy and performance. You have the following skills energized:\n\n- **PC Assistant**: Advanced system control and automation\n- **Event Monitor**: Predictive resource monitoring and alert detection\n`;
 fs.writeFileSync(workspaceDir + '/SOUL.md', soulContent);
 
 // Tools
