@@ -192,9 +192,6 @@ if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
 Set-Location $scriptDir
 node create-config.js
 
-# Run OpenClaw Doctor to apply any migrations and verify setup
-Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
-openclaw doctor --repair --yes --non-interactive
 
 # Apply Security Features (Firewall)
 Write-Host "Applying security firewall rules..." -ForegroundColor Cyan
@@ -231,3 +228,8 @@ while ($retryCount -lt 15) {
 
 Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan
 Start-Process "http://localhost:$port"
+
+# Run OpenClaw Doctor to apply any migrations and verify setup
+Write-Host ""
+Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
+openclaw doctor --repair --yes --non-interactive
