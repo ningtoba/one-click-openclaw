@@ -186,7 +186,7 @@ Set-Location $scriptDir
 node create-config.js
 
 Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
-openclaw gateway install --yes
+openclaw gateway install --force
 
 Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
 openclaw gateway start

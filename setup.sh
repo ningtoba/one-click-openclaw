@@ -147,7 +147,7 @@ echo "[5/5] Configuring OpenClaw..."
 node "$(dirname "$0")/create-config.js"
 
 echo "Installing OpenClaw Gateway service..."
-openclaw gateway install --yes || true
+openclaw gateway install --force || true
 
 echo "Starting OpenClaw Gateway..."
 openclaw gateway start || true
