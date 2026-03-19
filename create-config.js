@@ -33,16 +33,20 @@ const config = {
     agents: {
         defaults: {
             model: { primary: modelKey },
-            models: { [modelKey]: { temperature: 0.1, reasoning: false } }, // Low temperature and non-thinking
             workspace: dataDir + '/workspace',
-            compaction: { mode: 'auto', messages: 20 },
+            compaction: { mode: 'safeguard' },
             maxConcurrent: 4
-        }
-    },
-    identity: {
-        name: 'OpenClaw Assistant',
-        emoji: '🦞',
-        theme: 'red'
+        },
+        list: [
+            {
+                id: 'main',
+                identity: {
+                    name: 'OpenClaw Assistant',
+                    emoji: '🦞',
+                    theme: 'red'
+                }
+            }
+        ]
     },
     gateway: {
         port: parseInt(port),
@@ -53,7 +57,6 @@ const config = {
         nodes: { denyCommands: [] } // Allow all commands for direct setup
     },
     skills: {
-        enabled: true,
         entries: {
             'pc-assistant': { enabled: true },
             'event-monitor': { enabled: true }
