@@ -144,7 +144,9 @@ install_skill "event-monitor" || true
 
 echo ""
 echo "[5/5] Configuring OpenClaw..."
-node "$(dirname "$0")/create-config.js"
+CONFIG_OUTPUT=$(node "$(dirname "$0")/create-config.js")
+echo "$CONFIG_OUTPUT"
+TOKEN=$(echo "$CONFIG_OUTPUT" | grep "Token:" | awk '{print $2}')
 
 echo "Installing OpenClaw Gateway service..."
 openclaw gateway install --force || true
@@ -171,13 +173,13 @@ echo ""
 echo "========================================"
 echo "  DONE! Launching OpenClaw..."
 echo "========================================"
-echo "URL: http://localhost:$PORT"
+echo "URL: http://localhost:$PORT/?token=$TOKEN"
 
 # Wait for gateway to be ready
 echo "Waiting for gateway to start..."
 max_retries=15
 retry_count=0
-while ! curl -s --connect-timeout 2 http://localhost:$PORT > /dev/null 2>&1; do
+while ! curl -s --connect-timeout 2 "http://localhost:$PORT" > /dev/null 2>&1; do
     sleep 2
     retry_count=$((retry_count+1))
     if [ $retry_count -ge $max_retries ]; then
@@ -187,9 +189,9 @@ done
 
 echo "Opening OpenClaw dashboard..."
 if command -v xdg-open &> /dev/null; then
-    xdg-open "http://localhost:$PORT"
+    xdg-open "http://localhost:$PORT/?token=$TOKEN"
 elif command -v open &> /dev/null; then
-    open "http://localhost:$PORT"
+    open "http://localhost:$PORT/?token=$TOKEN"
 elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-    start "http://localhost:$PORT"
+    start "http://localhost:$PORT/?token=$TOKEN"
 fi

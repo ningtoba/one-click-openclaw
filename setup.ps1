@@ -183,7 +183,10 @@ Write-Host "[5/5] Configuring OpenClaw..." -ForegroundColor Cyan
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
 Set-Location $scriptDir
-node create-config.js
+$configResult = node create-config.js | Out-String
+Write-Host $configResult
+$tokenMatch = $configResult | Select-String "Token: (.*)"
+$setupToken = $tokenMatch.Matches.Groups[1].Value.Trim()
 
 Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
 openclaw gateway install --force
@@ -230,4 +233,4 @@ while ($retryCount -lt 15) {
 }
 
 Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan
-Start-Process "http://localhost:$port"
+Start-Process "http://localhost:$port/?token=$setupToken"
