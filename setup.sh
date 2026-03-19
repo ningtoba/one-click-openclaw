@@ -142,19 +142,15 @@ echo "Installing skills: pc-assistant, event-monitor..."
 install_skill "pc-assistant" || true
 install_skill "event-monitor" || true
 
-echo "Installing OpenClaw Gateway service..."
-sudo openclaw gateway install --yes || true
-
-echo "Starting OpenClaw Gateway..."
-openclaw gateway start || true
-
 echo ""
 echo "[5/5] Configuring OpenClaw..."
 node "$(dirname "$0")/create-config.js"
 
-# Run OpenClaw Doctor to apply any migrations and verify setup
-echo "Running diagnostics and repairs (openclaw doctor)..."
-openclaw doctor --repair --yes --non-interactive
+echo "Installing OpenClaw Gateway service..."
+openclaw gateway install --yes || true
+
+echo "Starting OpenClaw Gateway..."
+openclaw gateway start || true
 
 # Security Hardening - Firewall (Optional but automatic)
 echo "Setting up Firewall (silent)..."
@@ -166,6 +162,10 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         sudo firewall-cmd --reload 2>/dev/null || true
     fi
 fi
+
+# Run OpenClaw Doctor to apply any migrations and verify setup
+echo "Running diagnostics and repairs (openclaw doctor)..."
+openclaw doctor --repair --yes --non-interactive
 
 echo ""
 echo "========================================"

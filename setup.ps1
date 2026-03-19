@@ -178,13 +178,6 @@ Install-Skill "pc-assistant"
 Install-Skill "event-monitor"
 Write-Host "[OK] Core and Skills installed" -ForegroundColor Green
 
-Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
-openclaw gateway install --yes
-
-Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
-openclaw gateway start
-Start-Sleep -Seconds 3
-
 Write-Host ""
 Write-Host "[5/5] Configuring OpenClaw..." -ForegroundColor Cyan
 $scriptDir = $PSScriptRoot
@@ -192,6 +185,12 @@ if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
 Set-Location $scriptDir
 node create-config.js
 
+Write-Host "Installing OpenClaw Gateway service..." -ForegroundColor Cyan
+openclaw gateway install --yes
+
+Write-Host "Starting OpenClaw Gateway..." -ForegroundColor Cyan
+openclaw gateway start
+Start-Sleep -Seconds 3
 
 # Apply Security Features (Firewall)
 Write-Host "Applying security firewall rules..." -ForegroundColor Cyan
@@ -209,6 +208,10 @@ try {
             -ErrorAction SilentlyContinue | Out-Null
     }
 } catch { }
+
+# Run OpenClaw Doctor to apply any migrations and verify setup
+Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
+openclaw doctor --repair --yes --non-interactive
 
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Starting OpenClaw..." -ForegroundColor Green
@@ -228,8 +231,3 @@ while ($retryCount -lt 15) {
 
 Write-Host "Opening OpenClaw dashboard..." -ForegroundColor Cyan
 Start-Process "http://localhost:$port"
-
-# Run OpenClaw Doctor to apply any migrations and verify setup
-Write-Host ""
-Write-Host "Running diagnostics and repairs (openclaw doctor)..." -ForegroundColor Cyan
-openclaw doctor --repair --yes --non-interactive
