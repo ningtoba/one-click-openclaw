@@ -13,16 +13,12 @@ const config = {
     models: {
         providers: {
             ollama: {
-                baseUrl: llmUrl.includes('/v1') ? llmUrl : `${llmUrl}/v1`,
-                apiKey: 'ollama', // Required placeholder
-                api: 'openai',    // Using OpenAI-compatible mode for better stability
-                authHeader: false,
+                baseUrl: llmUrl.replace('/v1', ''),
+                apiKey: 'ollama-local', // Required placeholder for local identification
+                api: 'ollama',        // Using native Ollama integration for best results
                 models: [{
                     id: model,
                     name: model,
-                    reasoning: false,
-                    input: ['text'],
-                    cost: { input: 0, output: 0 },
                     contextWindow: 64000,
                     maxTokens: 16000
                 }]
@@ -49,8 +45,8 @@ const config = {
     },
     gateway: {
         port: parseInt(port),
-        mode: 'standalone', // Updated to standalone mode
-        bind: 'dual-stack', // More compatible for different network environments
+        mode: 'local', // Allowed: "local", "remote"
+        bind: 'auto',  // Allowed: "auto", "lan", "loopback", "custom", "tailnet"
         auth: { mode: 'token', token: token },
         tailscale: { mode: 'off' },
         nodes: { denyCommands: [] }
