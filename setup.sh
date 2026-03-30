@@ -16,8 +16,8 @@ echo ""
 PORT="18789"
 LLM_URL="http://localhost:11434/v1"
 MODEL="qwen3.5:9b"
-export PORT LLM
-LLM="$LLM_URL"
+export PORT
+export LLM="$LLM_URL"
 export MODEL
 
 # Check if running as root
@@ -169,11 +169,8 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     fi
 fi
 
-# Workspace Skill Linking (Ensures the model picks them up with priority)
-echo "Ensuring skills are linked to workspace..."
-mkdir -p "$HOME/.openclaw/workspace/skills"
-ln -sf "$HOME/.openclaw/skills/pc-assistant" "$HOME/.openclaw/workspace/skills/pc-assistant"
-ln -sf "$HOME/.openclaw/skills/event-monitor" "$HOME/.openclaw/workspace/skills/event-monitor"
+# Workspace initialization
+mkdir -p "$HOME/.openclaw/workspace"
 
 # Run OpenClaw Doctor to apply any migrations and verify setup
 echo "Running diagnostics and repairs (openclaw doctor)..."

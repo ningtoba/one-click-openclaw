@@ -6,25 +6,24 @@ const model = process.env.MODEL || 'qwen3.5:9b';
 const token = process.env.TOKEN || Math.random().toString(36).substring(2);
 const dataDir = process.env.DATA || (process.env.USERPROFILE || process.env.HOME) + '/.openclaw';
 
-const modelKey = 'locallm/' + model;
+const modelKey = 'ollama/' + model;
 
 const config = {
-    meta: { lastTouchedVersion: '2026.2.17' },
+    meta: { lastTouchedVersion: '2026.3.28' },
     models: {
         providers: {
-            locallm: {
-                baseUrl: llmUrl.replace('/v1', ''),
-                apiKey: 'ollama', // Required for native provider identification
-                api: 'ollama',
+            ollama: {
+                baseUrl: llmUrl.includes('/v1') ? llmUrl : `${llmUrl}/v1`,
+                apiKey: 'ollama', // Required placeholder
+                api: 'openai',    // Using OpenAI-compatible mode for better stability
                 authHeader: false,
                 models: [{
                     id: model,
                     name: model,
-                    api: 'ollama',
-                    reasoning: false, // Non-thinking mode (Direct Instruct)
+                    reasoning: false,
                     input: ['text'],
                     cost: { input: 0, output: 0 },
-                    contextWindow: 64000, // Optimized for local models
+                    contextWindow: 64000,
                     maxTokens: 16000
                 }]
             }
@@ -50,11 +49,11 @@ const config = {
     },
     gateway: {
         port: parseInt(port),
-        mode: 'local',
-        bind: 'loopback',  // Localhost-only for security (using modern bind mode)
+        mode: 'standalone', // Updated to standalone mode
+        bind: 'dual-stack', // More compatible for different network environments
         auth: { mode: 'token', token: token },
-        tailscale: { mode: 'off' },  // Disabled by default (no account required)
-        nodes: { denyCommands: [] } // Allow all commands for direct setup
+        tailscale: { mode: 'off' },
+        nodes: { denyCommands: [] }
     },
     skills: {
         entries: {
@@ -65,7 +64,6 @@ const config = {
     channels: {},
     hooks: { internal: { enabled: true, entries: {} } },
     commands: { native: 'auto', nativeSkills: 'auto' },
-    session: { retention: 100 },
     messages: { ackReactionScope: 'group-mentions' }
 };
 
@@ -84,7 +82,7 @@ const soulContent = `# Soul\n\nYou are a highly efficient PC Assistant. **You ha
 fs.writeFileSync(workspaceDir + '/SOUL.md', soulContent);
 
 // Tools
-const toolsContent = `# Tools\n\nThe following skills are installed and available via ClawHub. You can use any tools defined in their SKILL.md files:\n\n- [pc-assistant](skills/pc-assistant)\n- [event-monitor](skills/event-monitor)\n\nNotes: Use predictive monitoring to analyze system trends.\n`;
+const toolsContent = `# Tools\n\nThe following skills are installed and available via ClawHub. You can use any tools defined in their SKILL.md files:\n\n- **pc-assistant**: Advanced system control\n- **event-monitor**: Predictive monitoring\n\nNotes: Use predictive monitoring to analyze system trends.\n`;
 fs.writeFileSync(workspaceDir + '/TOOLS.md', toolsContent);
 
 // Set permissions on Linux/Mac
