@@ -90,8 +90,11 @@ try {
     Write-Host "[OK] Ollama found: $ollamaVersion" -ForegroundColor Green
 } catch {
     Write-Host "[INFO] Ollama not found. Installing..." -ForegroundColor Yellow
-    $ollamaInstallScript = Invoke-WebRequest -Uri "https://ollama.com/install.ps1" -UseBasicParsing
-    Invoke-Expression $ollamaInstallScript.Content
+    $ollamaInstall = Invoke-RestMethod -Uri "https://ollama.com/install.ps1"
+    if ($ollamaInstall -is [byte[]]) {
+        $ollamaInstall = [System.Text.Encoding]::UTF8.GetString($ollamaInstall)
+    }
+    Invoke-Expression $ollamaInstall
     
     # Reload paths
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -161,10 +164,10 @@ function Install-Skill {
         $success = $false
         $dataDir = "$env:USERPROFILE\.openclaw"
         try {
-            npx clawhub install $skill --force --workdir $dataDir
+            cmd /c "npx clawhub install $skill --force --workdir ""$dataDir"""
             if ($LASTEXITCODE -eq 0) { $success = $true }
             else {
-                npx clawdhub install $skill --force --workdir $dataDir
+                cmd /c "npx clawdhub install $skill --force --workdir ""$dataDir"""
                 if ($LASTEXITCODE -eq 0) { $success = $true }
             }
         } catch { }
