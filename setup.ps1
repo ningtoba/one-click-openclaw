@@ -28,58 +28,18 @@ if ($isAdmin) {
     exit 1
 }
 
-# Check if Node.js is installed and version is >= 22.16.0
-Write-Host "[1/5] Checking Node.js (Requires >= 22.16.0)..." -ForegroundColor Cyan
-$needNode = $true
+# Run OpenClaw Official Installer (handles Node.js, Git, OpenClaw CLI)
+Write-Host "[1/5] Running official OpenClaw installer (Node.js, Git, OpenClaw)..." -ForegroundColor Cyan
+$env:OPENCLAW_NO_ONBOARD = "1"
+powershell -c "irm https://openclaw.ai/install.ps1 | iex"
 
-function Get-NodeVersion {
-    try {
-        $nodeV = node --version | Out-String
-        return $nodeV.Trim().Substring(1)
-    } catch {
-        return $null
-    }
-}
+# Reload paths
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
 
-$nodeVerString = Get-NodeVersion
-if ($nodeVerString) {
-    $vParts = $nodeVerString.Split('.')
-    $major = [int]$vParts[0]
-    $minor = [int]$vParts[1]
-    if ($major -gt 22 -or ($major -eq 22 -and $minor -ge 16)) {
-        Write-Host "[OK] Node.js version $nodeVerString found." -ForegroundColor Green
-        $needNode = $false
-    } else {
-        Write-Host "[INFO] Found Node.js $nodeVerString, but OpenClaw requires >= 22.16.0." -ForegroundColor Yellow
-    }
-}
-
-if ($needNode) {
-    Write-Host "[INFO] Installing correct Node.js via winget..." -ForegroundColor Yellow
-    # Install Node.js LTS silently
-    # Winget might not let us pin specifically to 22.16.0 but usually LTS is newer
-    winget install --id OpenJS.NodeJS.LTS -e --silent --scope user --accept-package-agreements --accept-source-agreements
-    
-    # Reload environment
-    $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
-    
-    $newNodeVer = Get-NodeVersion
-    if ($newNodeVer) {
-        Write-Host "[OK] Node.js installed: $newNodeVer" -ForegroundColor Green
-    } else {
-        Write-Host "[ERROR] Node.js installation failed. Install from nodejs.org." -ForegroundColor Red
-        Start-Sleep -Seconds 5
-        exit 1
-    }
-}
-
-# Make sure npm is available
 try {
     $npmVersion = npm --version
 } catch {
-    Write-Host "[ERROR] npm is not available. Try restarting terminal." -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    exit 1
+    Write-Host "[WARNING] npm is not in current PATH. You might need to restart terminal after installation." -ForegroundColor Yellow
 }
 
 # Check Ollama
@@ -140,8 +100,8 @@ if ($modelList -match $llmModel) {
     ollama pull $llmModel
 }
 
-Write-Host "[4/5] Installing OpenClaw and Skills..." -ForegroundColor Cyan
-npm install -g openclaw@latest clawhub@latest clawdhub@latest
+Write-Host "[4/5] Installing Skills management tools..." -ForegroundColor Cyan
+npm install -g clawhub@latest clawdhub@latest
 
 # Function to install a skill with retries and check if already installed
 function Install-Skill {

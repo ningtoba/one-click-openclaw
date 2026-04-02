@@ -28,41 +28,19 @@ if [ "$EUID" -eq 0 ]; then
     exit 1
 fi
 
-# Check/Install Node.js
-echo "[1/5] Checking Node.js (Requires >= 22.16.0)..."
-NEED_NODE=true
-if command -v node &> /dev/null; then
-    NODE_VER=$(node -v | cut -d'v' -f2)
-    # Simple semantic version check (requires node 22.16.0 or higher)
-    MAJOR=$(echo "$NODE_VER" | cut -d'.' -f1)
-    MINOR=$(echo "$NODE_VER" | cut -d'.' -f2)
-    if [ "$MAJOR" -gt 22 ] || ([ "$MAJOR" -eq 22 ] && [ "$MINOR" -ge 16 ]); then
-        echo "OK: Node.js version $NODE_VER found."
-        NEED_NODE=false
-    else
-        echo "INFO: Found Node.js $NODE_VER, but OpenClaw requires >= 22.16.0."
-    fi
-fi
+# Run OpenClaw Official Installer (handles Node.js, Git, OpenClaw CLI)
+echo "[1/5] Running official OpenClaw installer (Node.js, Git, OpenClaw)..."
+export OPENCLAW_NO_ONBOARD="1"
+curl -fsSL https://openclaw.ai/install.sh | bash
 
-if [ "$NEED_NODE" = true ]; then
-    echo "INFO: Installing correct Node.js version via NVM..."
-    export NVM_DIR="$HOME/.nvm"
-    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    fi
-    # Load NVM
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    
-    nvm install 22.16.0
-    nvm use 22.16.0
-    nvm alias default 22.16.0
-fi
+# Source bashrc or profile to make sure npm is available if it was just installed
+if [ -f ~/.bashrc ]; then source ~/.bashrc; fi
+if [ -f ~/.profile ]; then source ~/.profile; fi
+if [ -f ~/.nvm/nvm.sh ]; then source ~/.nvm/nvm.sh; fi
 
 if ! command -v npm &> /dev/null; then
-    echo "ERROR: npm still not found. Try restarting your terminal or installing Node manually."
-    exit 1
+    echo "WARNING: npm is not in current PATH. You might need to restart your terminal after installation."
 fi
-echo "OK: $(npm --version)"
 
 # Check/Install Ollama
 echo ""
@@ -104,8 +82,8 @@ else
 fi
 
 echo ""
-echo "[4/5] Installing OpenClaw and Skills..."
-npm install -g openclaw@latest clawhub@latest clawdhub@latest
+echo "[4/5] Installing Skills management tools..."
+npm install -g clawhub@latest clawdhub@latest
 
 # Function to install a skill with retries and check if already installed
 install_skill() {

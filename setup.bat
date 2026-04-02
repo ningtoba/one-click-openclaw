@@ -24,58 +24,19 @@ if %errorlevel% == 0 (
     exit /b 1
 )
 
-:: Check if Node.js is installed
-echo [1/5] Checking Node.js (Requires ^>= 22.16.0)...
-set NEED_NODE=1
-for /f "tokens=*" %%v in ('node --version 2^>nul') do (
-    set NODE_VERSION=%%v
-)
+:: Run OpenClaw Official Installer (handles Node.js, Git, OpenClaw CLI)
+echo [1/5] Running official OpenClaw installer (Node.js, Git, OpenClaw)...
+set "OPENCLAW_NO_ONBOARD=1"
+powershell -c "irm https://openclaw.ai/install.ps1 | iex"
 
-if defined NODE_VERSION (
-    set "NODE_V=!NODE_VERSION:v=!"
-    for /f "tokens=1,2 delims=." %%a in ("!NODE_V!") do (
-        set MAJOR=%%a
-        set MINOR=%%b
-    )
-    if !MAJOR! GTR 22 (
-        set NEED_NODE=0
-    ) else if !MAJOR! EQU 22 (
-        if "!MINOR!"=="" set MINOR=0
-        if !MINOR! GEQ 16 (
-            set NEED_NODE=0
-        )
-    )
-    if !NEED_NODE! EQU 0 (
-        echo [OK] Node.js version !NODE_VERSION! found.
-    ) else (
-        echo [INFO] Found Node.js !NODE_VERSION!, but OpenClaw requires ^>= 22.16.0.
-    )
-)
-
-if !NEED_NODE! EQU 1 (
-    echo [INFO] Installing correct Node.js via winget...
-    winget install --id OpenJS.NodeJS.LTS -e --silent --scope user --accept-package-agreements --accept-source-agreements
-    
-    :: Try to reload path
-    for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v Path 2^>nul') do set "USER_PATH=%%B"
-    for /f "tokens=2*" %%A in ('reg query "HKLM\System\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul') do set "MACHINE_PATH=%%B"
-    set "PATH=!USER_PATH!;!MACHINE_PATH!;%PATH%"
-    
-    for /f "tokens=*" %%v in ('node --version 2^>nul') do set NEW_NODE_VER=%%v
-    if defined NEW_NODE_VER (
-        echo [OK] Node.js installed: !NEW_NODE_VER!
-    ) else (
-        echo [ERROR] Node.js installation failed. Install from nodejs.org.
-        timeout /t 5 >nul
-        exit /b 1
-    )
-)
+:: Reload path
+for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v Path 2^>nul') do set "USER_PATH=%%B"
+for /f "tokens=2*" %%A in ('reg query "HKLM\System\CurrentControlSet\Control\Session Manager\Environment" /v Path 2^>nul') do set "MACHINE_PATH=%%B"
+set "PATH=!USER_PATH!;!MACHINE_PATH!;%PATH%"
 
 call npm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] npm is not available. Try restarting terminal.
-    timeout /t 5 >nul
-    exit /b 1
+    echo [WARNING] npm is not in current PATH. You might need to restart terminal after installation.
 )
 
 :: Check Ollama
@@ -127,8 +88,8 @@ if %errorlevel% equ 0 (
     ollama pull %MODEL%
 )
 
-echo [4/5] Installing OpenClaw and Skills...
-call npm install -g openclaw@latest clawhub@latest clawdhub@latest
+echo [4/5] Installing Skills management tools...
+call npm install -g clawhub@latest clawdhub@latest
 
 :: Install skills sequentially
 call :InstallSkill pc-assistant
