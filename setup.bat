@@ -147,6 +147,7 @@ if %errorlevel% neq 0 (
 set "DASH_URL="
 FOR /F "tokens=*" %%i IN ('openclaw dashboard --no-open ^| findstr "http"') DO set "FULL_URL_LINE=%%i"
 for %%a in (!FULL_URL_LINE!) do set "DASH_URL=%%a"
+if "!DASH_URL:~0,4!" neq "http" set "DASH_URL=http://localhost:%PORT%/onboard?token=!DASH_URL!"
 
 echo URL: !DASH_URL!
 echo Opening OpenClaw dashboard...

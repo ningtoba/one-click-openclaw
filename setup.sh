@@ -163,6 +163,9 @@ echo "========================================"
 echo "  DONE! Launching OpenClaw..."
 echo "========================================"
 DASH_URL=$(openclaw dashboard --no-open | grep "http" | head -n 1 | awk '{print $NF}')
+if [[ ! $DASH_URL == http* ]]; then
+    DASH_URL="http://localhost:$PORT/onboard?token=$DASH_URL"
+fi
 echo "URL: $DASH_URL"
 
 # Wait for gateway to be ready
