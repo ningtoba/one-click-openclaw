@@ -45,9 +45,14 @@ const config = {
     },
     gateway: {
         port: parseInt(port),
-        mode: 'local', // Allowed: "local", "remote"
-        bind: 'auto',  // Allowed: "auto", "lan", "loopback", "custom", "tailnet"
-        auth: { mode: 'token', token: token },
+        mode: 'local',
+        bind: 'auto',
+        auth: {
+            mode: 'token',
+            token: token,
+            initialRole: 'operator' // Automatically grant operator role for one-click setup
+        },
+        pairing: { mode: 'off' }, // Disable pairing requirements for local setup
         tailscale: { mode: 'off' },
         nodes: { denyCommands: [] }
     },
